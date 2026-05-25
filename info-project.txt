@@ -1,0 +1,537 @@
+Create a Sports Club Management Website using Java (Servlet + JSP + JDBC + SQL Server),
+applying both Object-Oriented Software Design and Web Security principles.
+
+═══════════════════════════════════════════
+ TECHNOLOGY STACK
+═══════════════════════════════════════════
+- Backend     : Java Servlet / JSP (no Spring framework)
+- Database    : Microsoft SQL Server 2019+
+- JDBC Driver : com.microsoft.sqlserver:mssql-jdbc:12.4.2.jre11
+- Build Tool  : Maven
+- Server      : Apache Tomcat 10
+- Frontend    : HTML + CSS + Bootstrap 5 + JavaScript
+- Security    : BCrypt (jBCrypt), HttpSession, CSRF Token Filter
+
+═══════════════════════════════════════════
+ SQL SERVER CONNECTION CONFIGURATION
+═══════════════════════════════════════════
+// DatabaseConnection.java — Singleton + SQL Server
+public class DatabaseConnection {
+    private static final String URL =
+        "jdbc:sqlserver://localhost:1433;databaseName=SportsClubDB;" +
+        "encrypt=true;trustServerCertificate=true";
+    private static final String USER     = "sa";
+    private static final String PASSWORD = "YourPassword123";
+
+    private static volatile DatabaseConnection instance;
+    private Connection connection;
+
+    private DatabaseConnection() throws SQLException {
+        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        this.connection = DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
+    // Double-checked locking Singleton
+    public static DatabaseConnection getInstance() throws SQLException {
+        if (instance == null) {
+            synchronized (DatabaseConnection.class) {
+                if (instance == null) instance = new DatabaseConnection();
+            }
+        }
+        return instance;
+    }
+
+    public Connection getConnection() {
+        try {
+            if (connection == null || connection.isClosed())
+                connection = DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (SQLException e) { e.printStackTrace(); }
+        return connection;
+    }
+}
+
+// pom.xml — required dependencies
+<dependency>
+    <groupId>com.microsoft.sqlserver</groupId>
+    <artifactId>mssql-jdbc</artifactId>
+    <version>12.4.2.jre11</version>
+</dependency>
+<dependency>
+    <groupId>org.mindrot</groupId>
+    <artifactId>jbcrypt</artifactId>
+    <version>0.4</version>
+</dependency>
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version>
+    <scope>provided</scope>
+</dependency>
+<dependency>
+    <groupId>jstl</groupId>
+    <artifactId>jstl</artifactId>
+    <version>1.2</version>
+</dependency>
+
+═══════════════════════════════════════════
+ DATABASE — SQL SERVER SCRIPT (database.sql)
+═══════════════════════════════════════════
+-- Create database
+CREATE DATABASE SportsClubDB;
+GO
+USE SportsClubDB;
+GO
+
+-- Users table
+CREATE TABLE users (
+    id            INT IDENTITY(1,1) PRIMARY KEY,
+    username      NVARCHAR(50)  NOT NULL UNIQUE,
+    password_hash NVARCHAR(255) NOT NULL,
+    email         NVARCHAR(100) NOT NULL UNIQUE,
+    phone         NVARCHAR(20),
+    role          NVARCHAR(10)  NOT NULL CHECK (role IN ('ADMIN','COACH','MEMBER')),
+    created_at    DATETIME2     DEFAULT GETDATE()
+);
+
+-- Members table
+CREATE TABLE members (
+    id            INT IDENTITY(1,1) PRIMARY KEY,
+    user_id       INT           NOT NULL FOREIGN KEY REFERENCES users(id),
+    full_name     NVARCHAR(100) NOT NULL,
+    gender        NVARCHAR(10)  CHECK (gender IN ('MALE','FEMALE','OTHER')),
+    date_of_birth DATE,
+    address       NVARCHAR(255),
+    package_id    INT,
+    join_date     DATE          DEFAULT CAST(GETDATE() AS DATE),
+    expiry_date   DATE,
+    status        NVARCHAR(15)  DEFAULT 'ACTIVE'
+                                CHECK (status IN ('ACTIVE','INACTIVE','SUSPENDED'))
+);
+
+-- Coaches table
+CREATE TABLE coaches (
+    id             INT IDENTITY(1,1) PRIMARY KEY,
+    user_id        INT           NOT NULL FOREIGN KEY REFERENCES users(id),
+    full_name      NVARCHAR(100) NOT NULL,
+    specialization NVARCHAR(100),
+    experience     INT           DEFAULT 0,
+    bio            NVARCHAR(MAX),
+    salary         DECIMAL(12,2) DEFAULT 0
+);
+
+-- Training packages table
+CREATE TABLE training_packages (
+    id              INT IDENTITY(1,1) PRIMARY KEY,
+    name            NVARCHAR(100)  NOT NULL,
+    duration_months INT            NOT NULL,
+    price           DECIMAL(12,2)  NOT NULL,
+    max_classes     INT            DEFAULT 0,
+    description     NVARCHAR(MAX),
+    is_active       BIT            DEFAULT 1
+);
+
+-- Training classes table
+CREATE TABLE training_classes (
+    id               INT IDENTITY(1,1) PRIMARY KEY,
+    name             NVARCHAR(100) NOT NULL,
+    coach_id         INT           FOREIGN KEY REFERENCES coaches(id),
+    capacity         INT           DEFAULT 20,
+    current_enrolled INT           DEFAULT 0,
+    level            NVARCHAR(20)  CHECK (level IN ('BEGINNER','INTERMEDIATE','ADVANCED')),
+    description      NVARCHAR(MAX),
+    is_active        BIT           DEFAULT 1
+);
+
+-- Schedules table
+CREATE TABLE schedules (
+    id            INT IDENTITY(1,1) PRIMARY KEY,
+    class_id      INT          NOT NULL FOREIGN KEY REFERENCES training_classes(id),
+    day_of_week   NVARCHAR(15) NOT NULL
+                               CHECK (day_of_week IN
+                               ('MONDAY','TUESDAY','WEDNESDAY',
+                                'THURSDAY','FRIDAY','SATURDAY','SUNDAY')),
+    start_time    TIME         NOT NULL,
+    end_time      TIME         NOT NULL,
+    room          NVARCHAR(50),
+    repeat_weekly BIT          DEFAULT 1
+);
+
+-- Enrollments table
+CREATE TABLE enrollments (
+    id          INT IDENTITY(1,1) PRIMARY KEY,
+    member_id   INT          NOT NULL FOREIGN KEY REFERENCES members(id),
+    class_id    INT          NOT NULL FOREIGN KEY REFERENCES training_classes(id),
+    enroll_date DATE         DEFAULT CAST(GETDATE() AS DATE),
+    status      NVARCHAR(15) DEFAULT 'ACTIVE'
+                             CHECK (status IN ('ACTIVE','CANCELLED')),
+    CONSTRAINT uq_enrollment UNIQUE (member_id, class_id)
+);
+
+-- Login attempts table (brute-force protection)
+CREATE TABLE login_attempts (
+    id           INT IDENTITY(1,1) PRIMARY KEY,
+    username     NVARCHAR(50)  NOT NULL,
+    ip_address   NVARCHAR(50),
+    attempt_time DATETIME2     DEFAULT GETDATE(),
+    is_success   BIT           DEFAULT 0
+);
+
+-- Sample data
+INSERT INTO users (username, password_hash, email, role)
+VALUES
+('admin',   '$2a$12$xxxHASHxxx', 'admin@sportsclub.com',  'ADMIN'),
+('coach1',  '$2a$12$xxxHASHxxx', 'coach1@sportsclub.com', 'COACH'),
+('member1', '$2a$12$xxxHASHxxx', 'member1@gmail.com',     'MEMBER');
+GO
+
+-- Stored Procedure: get members by status
+CREATE PROCEDURE sp_GetMembersByStatus
+    @status NVARCHAR(15)
+AS
+BEGIN
+    SELECT m.*, u.username, u.email
+    FROM members m
+    INNER JOIN users u ON m.user_id = u.id
+    WHERE m.status = @status
+    ORDER BY m.join_date DESC;
+END;
+GO
+
+-- View: class enrollment statistics
+CREATE VIEW vw_ClassEnrollmentStats AS
+SELECT
+    tc.id,
+    tc.name             AS class_name,
+    tc.capacity,
+    tc.current_enrolled,
+    (tc.capacity - tc.current_enrolled) AS available_slots,
+    c.full_name         AS coach_name
+FROM training_classes tc
+LEFT JOIN coaches c ON tc.coach_id = c.id
+WHERE tc.is_active = 1;
+GO
+
+═══════════════════════════════════════════
+ DESIGN PATTERN 1 — PROTOTYPE
+═══════════════════════════════════════════
+
+PURPOSE:
+  Clone objects without depending on their concrete classes.
+  Use cases: clone weekly schedules, duplicate package templates,
+  copy member templates for bulk registration.
+
+INTERFACE:
+  interface SportClubPrototype {
+      SportClubPrototype clone();
+  }
+
+ABSTRACT BASE CLASS:
+  abstract class User implements SportClubPrototype, Cloneable {
+      protected int    id;
+      protected String username, passwordHash, email, phone;
+      protected Role   role;        // enum: ADMIN, COACH, MEMBER
+      protected LocalDateTime createdAt;
+
+      @Override public abstract User clone();
+  }
+
+CONCRETE CLASSES (all must implement clone()):
+
+  class Member extends User {
+      private String    fullName, gender, address;
+      private LocalDate dateOfBirth, joinDate, expiryDate;
+      private int       packageId;
+      private String    status;     // ACTIVE / INACTIVE / SUSPENDED
+
+      @Override
+      public Member clone() {
+          try { return (Member) super.clone(); }
+          catch (CloneNotSupportedException e) { throw new RuntimeException(e); }
+      }
+  }
+
+  class Coach extends User {
+      private String fullName, specialization, bio;
+      private int    experience;
+      private double salary;
+
+      @Override
+      public Coach clone() {
+          try { return (Coach) super.clone(); }
+          catch (CloneNotSupportedException e) { throw new RuntimeException(e); }
+      }
+  }
+
+  class TrainingClass implements SportClubPrototype, Cloneable {
+      private int    id, coachId, capacity, currentEnrolled;
+      private String name, description, level;
+
+      @Override
+      public TrainingClass clone() {
+          try { return (TrainingClass) super.clone(); }
+          catch (CloneNotSupportedException e) { throw new RuntimeException(e); }
+      }
+  }
+
+  class Schedule implements SportClubPrototype, Cloneable {
+      private int       id, classId;
+      private String    dayOfWeek, room;
+      private LocalTime startTime, endTime;
+      private boolean   repeatWeekly;
+
+      // PROTOTYPE use case: clone this week's schedule → next week
+      @Override
+      public Schedule clone() {
+          try { return (Schedule) super.clone(); }
+          catch (CloneNotSupportedException e) { throw new RuntimeException(e); }
+      }
+  }
+
+  class TrainingPackage implements SportClubPrototype, Cloneable {
+      private int    id, durationMonths, maxClasses;
+      private String name, description;
+      private double price;
+
+      // PROTOTYPE use case: clone a package template → create similar package
+      @Override
+      public TrainingPackage clone() {
+          try { return (TrainingPackage) super.clone(); }
+          catch (CloneNotSupportedException e) { throw new RuntimeException(e); }
+      }
+  }
+
+PROTOTYPE USAGE EXAMPLES (must be included in code):
+
+  // Clone a schedule to the following week
+  Schedule thisWeek = scheduleDAO.findById(1);
+  Schedule nextWeek = thisWeek.clone();     // PROTOTYPE in action
+  nextWeek.setId(0);
+  nextWeek.setDayOfWeek("NEXT_" + thisWeek.getDayOfWeek());
+  scheduleDAO.save(nextWeek);
+
+  // Clone a package template to create a new similar package
+  TrainingPackage template = packageDAO.findById(1);
+  TrainingPackage newPkg   = template.clone();  // PROTOTYPE in action
+  newPkg.setId(0);
+  newPkg.setName("Premium Plus");
+  newPkg.setPrice(template.getPrice() * 1.2);
+  packageDAO.save(newPkg);
+
+═══════════════════════════════════════════
+ DESIGN PATTERN 2 — ITERATOR
+═══════════════════════════════════════════
+
+PURPOSE:
+  Sequentially traverse collections of Member, TrainingClass, Schedule
+  without exposing their internal structure (List, Array, etc.).
+
+INTERFACES:
+  interface ClubIterator<T> {
+      boolean hasNext();
+      T       next();
+      default void reset() {}   // optional: rewind to beginning
+  }
+
+  interface ClubCollection<T> {
+      ClubIterator<T> createIterator();
+      void add(T item);
+      int  size();
+  }
+
+IMPLEMENTATION FOR MEMBER:
+  class MemberIterator implements ClubIterator<Member> {
+      private List<Member> members;
+      private int index = 0;
+
+      public MemberIterator(List<Member> members) { this.members = members; }
+
+      @Override public boolean hasNext() { return index < members.size(); }
+      @Override public Member  next()    { return members.get(index++); }
+      @Override public void    reset()   { index = 0; }
+  }
+
+  class MemberCollection implements ClubCollection<Member> {
+      private List<Member> members = new ArrayList<>();
+
+      @Override public void add(Member m)  { members.add(m); }
+      @Override public int  size()         { return members.size(); }
+      @Override public ClubIterator<Member> createIterator() {
+          return new MemberIterator(members);
+      }
+  }
+
+  // ClassIterator + ClassCollection       — same pattern for TrainingClass
+  // ScheduleIterator + ScheduleCollection — same pattern for Schedule
+
+ITERATOR USAGE EXAMPLES (must be included in code):
+
+  // Filter ACTIVE members without using Stream/for-each directly
+  MemberCollection collection = new MemberCollection();
+  memberDAO.findAll().forEach(collection::add);
+
+  ClubIterator<Member> it = collection.createIterator(); // ITERATOR in action
+  List<Member> activeList = new ArrayList<>();
+  while (it.hasNext()) {
+      Member m = it.next();
+      if ("ACTIVE".equals(m.getStatus())) activeList.add(m);
+  }
+  request.setAttribute("members", activeList);
+
+  // Iterate schedules for a specific coach
+  ScheduleCollection sc = new ScheduleCollection();
+  scheduleDAO.findByCoachId(coachId).forEach(sc::add);
+
+  ClubIterator<Schedule> si = sc.createIterator(); // ITERATOR in action
+  while (si.hasNext()) {
+      Schedule s = si.next();
+      // render to JSP view
+  }
+
+═══════════════════════════════════════════
+ SUPPORTING PATTERNS
+═══════════════════════════════════════════
+- Singleton : DatabaseConnection (double-checked locking, SQL Server)
+- DAO       : UserDAO, MemberDAO, CoachDAO, ClassDAO,
+              ScheduleDAO, EnrollmentDAO, PackageDAO
+              (all use PreparedStatement with SQL Server syntax)
+- MVC       : Servlet (Controller) + JSP (View) + Model (Entity + DAO)
+
+═══════════════════════════════════════════
+ ROLE-BASED ACCESS CONTROL (RBAC)
+═══════════════════════════════════════════
+  ADMIN  → Full access: members, coaches, classes, schedules,
+           packages, revenue reports, statistics
+  COACH  → View own classes, view enrolled members, update profile
+  MEMBER → Register for classes, view personal schedule,
+           view packages, update profile
+
+═══════════════════════════════════════════
+ WEB SECURITY
+═══════════════════════════════════════════
+
+1. AUTHENTICATION
+   - Registration : validate all inputs, hash password with BCrypt (cost = 12)
+   - Login        : verify BCrypt hash, regenerate session ID after login
+   - Logout       : call session.invalidate() completely
+   - Brute force  : lock account for 15 minutes after 5 failed attempts,
+                    log all attempts to login_attempts table
+
+2. AUTHORIZATION — AuthorizationFilter implements Filter
+   - Check session before every request
+   - URL pattern to role mapping:
+       /admin/*  → ADMIN only
+       /coach/*  → COACH only
+       /member/* → MEMBER only
+   - Not authenticated → redirect to /login
+   - Insufficient role → forward to /error/403.jsp
+
+3. SQL INJECTION PREVENTION
+   - Use PreparedStatement 100% — never concatenate SQL strings
+   - Correct : "SELECT * FROM users WHERE username = ?"
+   - Wrong   : "SELECT * FROM users WHERE username = '" + username + "'"
+
+4. XSS PREVENTION
+   - HtmlUtils.escapeHtml() encodes all output before rendering to JSP
+   - Use JSTL <c:out value="${data}"/> instead of ${data} directly
+   - Set Content-Security-Policy header in SecurityHeadersFilter
+
+5. CSRF PREVENTION
+   - CsrfFilter: generate UUID token stored in session on form load
+   - Every POST form includes: <input type="hidden" name="_csrf" value="${csrfToken}">
+   - Filter validates token before processing any POST request,
+     reject request if token does not match
+
+6. SECURITY HEADERS — SecurityHeadersFilter
+   X-Content-Type-Options  : nosniff
+   X-Frame-Options          : DENY
+   X-XSS-Protection         : 1; mode=block
+   Content-Security-Policy  : default-src 'self'
+   Strict-Transport-Security: max-age=31536000
+
+7. SESSION SECURITY
+   - Cookie flags: HttpOnly=true, Secure=true
+   - Session timeout: 30 minutes of inactivity
+   - Session fixation protection: invalidate old session,
+     create new session immediately after successful login
+
+═══════════════════════════════════════════
+ PROJECT STRUCTURE (MAVEN)
+═══════════════════════════════════════════
+sports-club-management/
+├── src/main/java/com/sportsclub/
+│   ├── pattern/
+│   │   ├── prototype/
+│   │   │   └── SportClubPrototype.java       ← Prototype interface
+│   │   └── iterator/
+│   │       ├── ClubIterator.java             ← Iterator<T> interface
+│   │       ├── ClubCollection.java           ← Collection<T> interface
+│   │       ├── MemberIterator.java
+│   │       ├── MemberCollection.java
+│   │       ├── ClassIterator.java
+│   │       ├── ClassCollection.java
+│   │       ├── ScheduleIterator.java
+│   │       └── ScheduleCollection.java
+│   ├── model/                                ← Entities (implement Prototype)
+│   │   ├── User.java         (abstract)
+│   │   ├── Member.java
+│   │   ├── Coach.java
+│   │   ├── TrainingClass.java
+│   │   ├── Schedule.java
+│   │   ├── Enrollment.java
+│   │   └── TrainingPackage.java
+│   ├── dao/                                  ← DAO Pattern
+│   │   ├── UserDAO.java
+│   │   ├── MemberDAO.java
+│   │   ├── CoachDAO.java
+│   │   ├── ClassDAO.java
+│   │   ├── ScheduleDAO.java
+│   │   ├── EnrollmentDAO.java
+│   │   └── PackageDAO.java
+│   ├── servlet/                              ← MVC Controllers
+│   │   ├── admin/
+│   │   ├── coach/
+│   │   └── member/
+│   ├── filter/                               ← Security Filters
+│   │   ├── AuthenticationFilter.java
+│   │   ├── AuthorizationFilter.java
+│   │   ├── CsrfFilter.java
+│   │   └── SecurityHeadersFilter.java
+│   └── util/
+│       ├── DatabaseConnection.java           ← Singleton (SQL Server)
+│       ├── BCryptUtil.java
+│       ├── HtmlUtils.java
+│       └── CsrfUtils.java
+├── src/main/webapp/
+│   ├── WEB-INF/
+│   │   ├── web.xml
+│   │   └── views/
+│   │       ├── admin/
+│   │       ├── coach/
+│   │       ├── member/
+│   │       └── common/
+│   │           ├── login.jsp
+│   │           ├── register.jsp
+│   │           ├── 403.jsp
+│   │           └── 404.jsp
+│   └── assets/  (css, js, images)
+└── src/main/resources/
+    └── database.sql          ← Full SQL Server script + sample data
+
+═══════════════════════════════════════════
+ CODE REQUIREMENTS
+═══════════════════════════════════════════
+- Write ALL Java, JSP, and SQL files completely — no placeholders
+- Use SQL Server syntax throughout:
+    IDENTITY(1,1) instead of AUTO_INCREMENT
+    NVARCHAR instead of VARCHAR
+    DATETIME2 instead of DATETIME
+    GETDATE() instead of NOW()
+    OFFSET x ROWS FETCH NEXT y ROWS ONLY instead of LIMIT
+    GO to separate batches
+- Add clear comments wherever PROTOTYPE pattern is applied
+- Add clear comments wherever ITERATOR pattern is applied
+- Add comments explaining each security measure at the exact code location
+- Follow Java Naming Conventions (camelCase, PascalCase)
+- Bootstrap 5 UI — clean, responsive, professional
+- Separate dashboards for each role: ADMIN / COACH / MEMBER
+- User-friendly error messages — never expose system internals

@@ -1,0 +1,39 @@
+/* Sports Club Management — custom overrides */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.card {
+    border-radius: 0.75rem;
+}
+
+.table th {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+
+.display-4 {
+    font-weight: 700;
+}
+
+/* Highlight available slots */
+.slots-available {
+    color: #198754;
+    font-weight: 600;
+}
+
+.slots-full {
+    color: #dc3545;
+    font-weight: 600;
+}
