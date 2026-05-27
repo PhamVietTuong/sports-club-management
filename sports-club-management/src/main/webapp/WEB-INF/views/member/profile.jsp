@@ -4,80 +4,145 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile — Sports Club</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
-<nav class="navbar navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="${pageContext.request.contextPath}/member/dashboard">Sports Club</a>
-        <a class="nav-link text-white" href="${pageContext.request.contextPath}/member/classes">Classes</a>
-        <form method="post" action="${pageContext.request.contextPath}/logout" class="d-inline">
+
+<nav class="member-nav">
+    <a href="${pageContext.request.contextPath}/member/dashboard" class="member-nav-logo">
+        <div class="member-nav-logo-badge">SC</div>
+        Sports Club
+    </a>
+    <div class="member-nav-links">
+        <a href="${pageContext.request.contextPath}/member/dashboard">Dashboard</a>
+        <a href="${pageContext.request.contextPath}/member/classes">Classes</a>
+        <a href="${pageContext.request.contextPath}/member/profile" class="active">My Profile</a>
+    </div>
+    <div class="member-nav-actions">
+        <form method="post" action="${pageContext.request.contextPath}/logout" style="display:inline;">
             <input type="hidden" name="_csrf" value="${csrfToken}">
-            <button class="btn btn-sm btn-outline-light">Logout</button>
+            <button type="submit" class="btn btn-ghost btn-sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Logout
+            </button>
         </form>
     </div>
 </nav>
-<div class="container py-4">
-    <h2>My Profile</h2>
+
+<div class="page-body">
 
     <c:if test="${not empty sessionScope.flash}">
-        <div class="alert alert-success alert-dismissible fade show">
-            <c:out value="${sessionScope.flash}"/>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+        <div class="alert alert-success"><c:out value="${sessionScope.flash}"/></div>
         <c:remove var="flash" scope="session"/>
     </c:if>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <form method="post" action="${pageContext.request.contextPath}/member/profile">
-                        <input type="hidden" name="_csrf" value="${csrfToken}">
+    <div class="page-header" style="margin-bottom:20px;">
+        <div class="page-title">My Profile</div>
+    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Full Name</label>
-                            <input type="text" name="fullName" class="form-control"
-                                   value="<c:out value='${member.fullName}'/>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Phone</label>
-                            <input type="text" name="phone" class="form-control"
-                                   value="<c:out value='${member.phone}'/>">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Address</label>
-                            <input type="text" name="address" class="form-control"
-                                   value="<c:out value='${member.address}'/>">
-                        </div>
-                        <hr>
-                        <h6>Change Password (leave blank to keep current)</h6>
-                        <div class="mb-3">
-                            <label class="form-label">New Password</label>
-                            <input type="password" name="newPassword" class="form-control" minlength="8">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
-                    </form>
-                </div>
+    <div class="grid-2">
+        <!-- Left: Identity Card -->
+        <div class="card">
+            <div class="profile-avatar">
+                ${member.fullName.substring(0,1).toUpperCase()}
+            </div>
+            <h4 class="text-center" style="margin-bottom:4px;">
+                <c:out value="${member.fullName}"/>
+            </h4>
+            <p class="text-center" style="margin-bottom:14px;">
+                <span class="badge badge-primary">MEMBER</span>
+            </p>
+
+            <hr class="divider" style="margin:14px 0;">
+
+            <div class="info-row">
+                <span class="info-row-label">Status</span>
+                <span class="info-row-value">
+                    <c:choose>
+                        <c:when test="${member.status eq 'ACTIVE'}">
+                            <span class="badge badge-success"><c:out value="${member.status}"/></span>
+                        </c:when>
+                        <c:when test="${member.status eq 'SUSPENDED'}">
+                            <span class="badge badge-danger"><c:out value="${member.status}"/></span>
+                        </c:when>
+                        <c:otherwise>
+                            <span class="badge badge-warning"><c:out value="${member.status}"/></span>
+                        </c:otherwise>
+                    </c:choose>
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-row-label">Join Date</span>
+                <span class="info-row-value"><c:out value="${member.joinDate}"/></span>
+            </div>
+            <div class="info-row">
+                <span class="info-row-label">Expiry</span>
+                <span class="info-row-value"><c:out value="${member.expiryDate}"/></span>
+            </div>
+            <div class="info-row">
+                <span class="info-row-label">Gender</span>
+                <span class="info-row-value"><c:out value="${member.gender}"/></span>
+            </div>
+            <div class="info-row">
+                <span class="info-row-label">Email</span>
+                <span class="info-row-value" style="font-size:12px;"><c:out value="${member.email}"/></span>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5>Membership Info</h5>
-                    <table class="table table-sm">
-                        <tr><th>Status</th><td><c:out value="${member.status}"/></td></tr>
-                        <tr><th>Join Date</th><td><c:out value="${member.joinDate}"/></td></tr>
-                        <tr><th>Expiry</th><td><c:out value="${member.expiryDate}"/></td></tr>
-                        <tr><th>Gender</th><td><c:out value="${member.gender}"/></td></tr>
-                        <tr><th>Email</th><td><c:out value="${member.email}"/></td></tr>
-                    </table>
+
+        <!-- Right: Edit Form -->
+        <div class="card">
+            <div class="section-header">Personal Information</div>
+
+            <form method="post" action="${pageContext.request.contextPath}/member/profile">
+                <input type="hidden" name="_csrf" value="${csrfToken}">
+
+                <div class="form-grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="fullName" class="form-control"
+                               value="<c:out value='${member.fullName}'/>" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="text" name="phone" class="form-control"
+                               value="<c:out value='${member.phone}'/>">
+                    </div>
                 </div>
-            </div>
+
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <input type="text" name="address" class="form-control"
+                           value="<c:out value='${member.address}'/>"
+                           placeholder="Your address">
+                </div>
+
+                <hr class="divider">
+
+                <p class="fw-bold" style="font-size:13px;margin-bottom:4px;">Change Password</p>
+                <p class="text-muted" style="font-size:12px;margin-bottom:12px;">
+                    Leave blank to keep current password
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label">New Password</label>
+                    <input type="password" name="newPassword" class="form-control"
+                           minlength="8" placeholder="Minimum 8 characters">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100" style="margin-top:8px;">
+                    Save Changes
+                </button>
+            </form>
         </div>
     </div>
+
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -6,17 +6,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — Sports Club</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
-<body class="bg-light">
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="card shadow-sm" style="width:420px">
-        <div class="card-body p-4">
-            <h4 class="card-title text-center mb-4 text-primary fw-bold">
-                <i class="bi bi-trophy-fill"></i> Sports Club
-            </h4>
-            <h5 class="text-center mb-4">Sign In</h5>
+<body>
+<div class="login-shell">
+
+    <!-- Left Brand Panel -->
+    <div class="login-brand">
+        <div class="login-brand-icon">🏆</div>
+        <div class="login-brand-name">SPORTS CLUB</div>
+        <p class="login-brand-tagline">Push your limits. Track your progress.</p>
+    </div>
+
+    <!-- Right Form Area -->
+    <div class="login-form-area">
+        <div class="login-form-card">
+            <h2>Welcome Back</h2>
+            <p class="subtitle">Sign in to your account</p>
 
             <%-- Display error message (XSS safe via c:out) --%>
             <c:if test="${not empty error}">
@@ -30,26 +36,29 @@
                 <%-- CSRF PREVENTION — hidden token matched against session --%>
                 <input type="hidden" name="_csrf" value="${csrfToken}">
 
-                <div class="mb-3">
+                <div class="form-group">
                     <label class="form-label">Username</label>
                     <input type="text" name="username" class="form-control"
-                           required autocomplete="username" maxlength="50">
+                           required autocomplete="username" maxlength="50"
+                           placeholder="Enter your username">
                 </div>
-                <div class="mb-3">
+                <div class="form-group">
                     <label class="form-label">Password</label>
                     <input type="password" name="password" class="form-control"
-                           required autocomplete="current-password">
+                           required autocomplete="current-password"
+                           placeholder="Enter your password">
                 </div>
-                <button type="submit" class="btn btn-primary w-100">Login</button>
+                <button type="submit" class="btn btn-primary w-100" style="margin-top:8px;">Sign In</button>
             </form>
 
-            <hr>
-            <div class="text-center">
-                <a href="${pageContext.request.contextPath}/register">Don't have an account? Register</a>
-            </div>
+            <hr class="divider">
+            <p class="text-center text-muted" style="font-size:13px;">
+                Don't have an account?
+                <a href="${pageContext.request.contextPath}/register">Register</a>
+            </p>
         </div>
     </div>
+
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

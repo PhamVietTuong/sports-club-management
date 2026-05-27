@@ -32,8 +32,9 @@ public class SecurityHeadersFilter implements Filter {
         response.setHeader("Content-Security-Policy",
             "default-src 'self'; " +
             "script-src 'self' https://cdn.jsdelivr.net; " +
-            "style-src 'self' https://cdn.jsdelivr.net; " +
-            "font-src 'self' https://cdn.jsdelivr.net;");
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+            "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
+            "img-src 'self' data:;");
 
         // Enforce HTTPS for 1 year
         response.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");

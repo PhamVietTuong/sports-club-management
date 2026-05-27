@@ -4,47 +4,105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coaches — Admin</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
-<%@ include file="navbar.jsp" %>
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Coach Management</h2>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCoachModal">
-            + Add Coach
-        </button>
-    </div>
+<c:set var="activeNav" value="coaches"/>
+<div class="app-shell">
+    <%@ include file="navbar.jsp" %>
+    <div class="main-content">
 
-    <c:if test="${not empty error}">
-        <div class="alert alert-danger"><c:out value="${error}"/></div>
-    </c:if>
+        <header class="top-bar">
+            <span class="top-bar-title">Coaches</span>
+            <div class="top-bar-user">
+                <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
+                <div class="user-avatar">
+                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                </div>
+            </div>
+        </header>
 
-    <div class="table-responsive">
-        <table class="table table-striped align-middle">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th><th>Name</th><th>Email</th>
-                    <th>Specialization</th><th>Experience</th><th>Salary</th>
-                </tr>
-            </thead>
-            <tbody>
-                <c:forEach var="c" items="${coaches}">
-                <tr>
-                    <td><c:out value="${c.id}"/></td>
-                    <td><c:out value="${c.fullName}"/></td>
-                    <td><c:out value="${c.email}"/></td>
-                    <td><c:out value="${c.specialization}"/></td>
-                    <td><c:out value="${c.experience}"/> yr(s)</td>
-                    <td>$<c:out value="${c.salary}"/></td>
-                </tr>
-                </c:forEach>
-                <c:if test="${empty coaches}">
-                    <tr><td colspan="6" class="text-center text-muted">No coaches found.</td></tr>
-                </c:if>
-            </tbody>
-        </table>
+        <div class="page-body">
+
+            <c:if test="${not empty error}">
+                <div class="alert alert-danger"><c:out value="${error}"/></div>
+            </c:if>
+
+            <div class="page-header">
+                <div>
+                    <div class="page-title">Coaches</div>
+                    <div class="page-subtitle">Manage coaching staff and their assignments</div>
+                </div>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCoachModal">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Coach
+                </button>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Specialization</th>
+                            <th>Experience</th>
+                            <th>Salary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach var="c" items="${coaches}">
+                        <tr>
+                            <td style="color:var(--muted);font-size:12px;"><c:out value="${c.id}"/></td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <div style="width:32px;height:32px;border-radius:50%;background:rgba(232,73,15,0.15);
+                                                color:var(--primary);font-family:'Syne',sans-serif;font-weight:700;
+                                                font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                        ${c.fullName.substring(0,1).toUpperCase()}
+                                    </div>
+                                    <span class="fw-bold"><c:out value="${c.fullName}"/></span>
+                                </div>
+                            </td>
+                            <td style="color:var(--muted);"><c:out value="${c.email}"/></td>
+                            <td>
+                                <c:if test="${not empty c.specialization}">
+                                    <span class="badge badge-info"><c:out value="${c.specialization}"/></span>
+                                </c:if>
+                                <c:if test="${empty c.specialization}">
+                                    <span class="text-muted small">—</span>
+                                </c:if>
+                            </td>
+                            <td>
+                                <span style="color:var(--text);">
+                                    <c:out value="${c.experience}"/>
+                                </span>
+                                <span style="color:var(--muted);font-size:12px;"> yr(s)</span>
+                            </td>
+                            <td>
+                                <span style="color:var(--success);font-weight:600;">
+                                    $<c:out value="${c.salary}"/>
+                                </span>
+                            </td>
+                        </tr>
+                        </c:forEach>
+                        <c:if test="${empty coaches}">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted" style="padding:36px 14px;">
+                                    No coaches found.
+                                </td>
+                            </tr>
+                        </c:if>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -57,54 +115,57 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="${pageContext.request.contextPath}/admin/coaches">
-                <input type="hidden" name="_csrf"   value="${csrfToken}">
-                <input type="hidden" name="action"  value="add">
-                <div class="modal-body row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Username</label>
-                        <input type="text" name="username" class="form-control" required maxlength="50">
+                <input type="hidden" name="_csrf"  value="${csrfToken}">
+                <input type="hidden" name="action" value="add">
+                <div class="modal-body">
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Username <span class="req">*</span></label>
+                            <input type="text" name="username" class="form-control" required maxlength="50" placeholder="e.g. coach_john">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Full Name <span class="req">*</span></label>
+                            <input type="text" name="fullName" class="form-control" required maxlength="100" placeholder="Full display name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email <span class="req">*</span></label>
+                            <input type="email" name="email" class="form-control" required placeholder="coach@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone</label>
+                            <input type="text" name="phone" class="form-control" maxlength="20" placeholder="+1 555 000 0000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password <span class="req">*</span></label>
+                            <input type="password" name="password" class="form-control" required minlength="8" placeholder="Min. 8 characters">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Specialization</label>
+                            <input type="text" name="specialization" class="form-control" maxlength="100" placeholder="e.g. Strength & Conditioning">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Experience (years)</label>
+                            <input type="number" name="experience" class="form-control" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Salary ($)</label>
+                            <input type="number" name="salary" class="form-control" step="0.01" min="0" value="0">
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" name="fullName" class="form-control" required maxlength="100">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Phone</label>
-                        <input type="text" name="phone" class="form-control" maxlength="20">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Password</label>
-                        <input type="password" name="password" class="form-control" required minlength="8">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Specialization</label>
-                        <input type="text" name="specialization" class="form-control" maxlength="100">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Experience (years)</label>
-                        <input type="number" name="experience" class="form-control" min="0" value="0">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Salary</label>
-                        <input type="number" name="salary" class="form-control" step="0.01" min="0" value="0">
-                    </div>
-                    <div class="col-12">
+                    <div class="form-group">
                         <label class="form-label">Bio</label>
-                        <textarea name="bio" class="form-control" rows="3"></textarea>
+                        <textarea name="bio" class="form-control" rows="3" placeholder="Short coach biography..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Coach</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
