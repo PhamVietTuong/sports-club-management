@@ -22,7 +22,7 @@
     </div>
     <div class="member-nav-actions">
         <span class="nav-username"><c:out value="${member.fullName}"/></span>
-        <form method="post" action="${pageContext.request.contextPath}/logout" style="display:inline;">
+        <form method="post" action="${pageContext.request.contextPath}/logout" class="d-inline">
             <input type="hidden" name="_csrf" value="${csrfToken}">
             <button type="submit" class="btn btn-ghost btn-sm">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -44,39 +44,39 @@
         <c:remove var="flash" scope="session"/>
     </c:if>
 
-    <h2 style="font-size:22px;margin-bottom:4px;">
+    <h2 class="fs-22 mb-4px">
         Welcome back, <c:out value="${member.fullName}"/>!
     </h2>
-    <p class="text-muted" style="font-size:13px;margin-bottom:24px;">
+    <p class="text-muted fs-13 mb-4">
         Here's your membership overview.
     </p>
 
     <div class="grid-2">
         <!-- Membership Status Card -->
         <div class="stat-card">
-            <div class="stat-label" style="margin-bottom:10px;">Membership Status</div>
-            <div style="margin-bottom:8px;">
+            <div class="stat-label mb-2">Membership Status</div>
+            <div class="mb-8px">
                 <c:choose>
                     <c:when test="${member.status eq 'ACTIVE'}">
-                        <span class="badge badge-success" style="font-size:13px;">
+                        <span class="badge badge-success fs-13">
                             <c:out value="${member.status}"/>
                         </span>
                     </c:when>
                     <c:when test="${member.status eq 'SUSPENDED'}">
-                        <span class="badge badge-danger" style="font-size:13px;">
+                        <span class="badge badge-danger fs-13">
                             <c:out value="${member.status}"/>
                         </span>
                     </c:when>
                     <c:otherwise>
-                        <span class="badge badge-warning" style="font-size:13px;">
+                        <span class="badge badge-warning fs-13">
                             <c:out value="${member.status}"/>
                         </span>
                     </c:otherwise>
                 </c:choose>
             </div>
-            <p style="font-size:13px;color:var(--muted);margin:0;">
+            <p class="fs-13 text-muted m-0">
                 Expires:
-                <strong style="color:var(--text);">
+                <strong class="text-default">
                     <c:out value="${member.expiryDate != null ? member.expiryDate : 'N/A'}"/>
                 </strong>
             </p>
@@ -84,7 +84,7 @@
 
         <!-- Enrollments Card -->
         <div class="stat-card">
-            <div class="stat-icon blue" style="margin-bottom:10px;">
+            <div class="stat-icon blue mb-2">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="1.5">
                     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -96,7 +96,7 @@
             <div class="stat-number">${enrollments.size()}</div>
             <div class="stat-label">Enrolled Classes</div>
             <a href="${pageContext.request.contextPath}/member/classes"
-               class="btn btn-primary btn-sm" style="margin-top:12px;">
+               class="btn btn-primary btn-sm mt-12px">
                 Browse Classes
             </a>
         </div>
@@ -126,8 +126,7 @@
                 </c:forEach>
                 <c:if test="${empty schedules}">
                     <tr>
-                        <td colspan="5" class="text-center text-muted"
-                            style="padding:32px 14px;">No scheduled classes yet.</td>
+                        <td colspan="5" class="text-center text-muted empty-pad-32">No scheduled classes yet.</td>
                     </tr>
                 </c:if>
             </tbody>

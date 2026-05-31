@@ -18,7 +18,7 @@
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
-                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                    <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
             </div>
         </header>
@@ -75,7 +75,7 @@
             <div class="grid-2 mt-4">
                 <div class="card">
                     <div class="card-title">Quick Actions</div>
-                    <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div class="d-flex flex-column gap-2">
                         <a href="${pageContext.request.contextPath}/admin/schedules"
                            class="btn btn-ghost">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -99,12 +99,12 @@
 
                 <div class="card">
                     <div class="card-title">Overview</div>
-                    <p style="font-size:13px;color:var(--muted);line-height:1.8;">
+                    <p class="fs-13 text-muted lh-18">
                         Manage your sports club members, coaches, and training classes from this dashboard.
                         Use the sidebar to navigate between sections.
                     </p>
-                    <p style="font-size:12px;color:var(--muted);margin-top:10px;">
-                        Logged in as <strong style="color:var(--text);">
+                    <p class="small text-muted mt-2">
+                        Logged in as <strong class="text-default">
                             <c:out value="${sessionScope.loggedInUser.username}"/>
                         </strong>
                     </p>

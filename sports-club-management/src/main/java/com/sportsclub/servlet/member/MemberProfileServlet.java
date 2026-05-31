@@ -42,7 +42,13 @@ public class MemberProfileServlet extends HttpServlet {
             User   loggedIn = (User) req.getSession().getAttribute("loggedInUser");
             Member member   = memberDAO.findByUserId(loggedIn.getId());
 
-            member.setFullName(req.getParameter("fullName"));
+            String fullName = req.getParameter("fullName");
+            if (isBlank(fullName)) {
+                resp.sendRedirect(req.getContextPath() + "/member/profile?error=1");
+                return;
+            }
+
+            member.setFullName(fullName.trim());
             member.setPhone(req.getParameter("phone"));
             member.setAddress(req.getParameter("address"));
             memberDAO.update(member);
@@ -58,5 +64,9 @@ public class MemberProfileServlet extends HttpServlet {
         } catch (Exception e) {
             resp.sendRedirect(req.getContextPath() + "/member/profile?error=1");
         }
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

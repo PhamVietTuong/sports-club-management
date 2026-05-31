@@ -21,7 +21,7 @@
         <a href="${pageContext.request.contextPath}/member/profile" class="active">My Profile</a>
     </div>
     <div class="member-nav-actions">
-        <form method="post" action="${pageContext.request.contextPath}/logout" style="display:inline;">
+        <form method="post" action="${pageContext.request.contextPath}/logout" class="d-inline">
             <input type="hidden" name="_csrf" value="${csrfToken}">
             <button type="submit" class="btn btn-ghost btn-sm">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -43,7 +43,7 @@
         <c:remove var="flash" scope="session"/>
     </c:if>
 
-    <div class="page-header" style="margin-bottom:20px;">
+    <div class="page-header mb-20px">
         <div class="page-title">My Profile</div>
     </div>
 
@@ -51,16 +51,16 @@
         <!-- Left: Identity Card -->
         <div class="card">
             <div class="profile-avatar">
-                ${member.fullName.substring(0,1).toUpperCase()}
+                <c:out value="${not empty member.fullName ? member.fullName.substring(0,1).toUpperCase() : '?'}"/>
             </div>
-            <h4 class="text-center" style="margin-bottom:4px;">
+            <h4 class="text-center mb-4px">
                 <c:out value="${member.fullName}"/>
             </h4>
-            <p class="text-center" style="margin-bottom:14px;">
+            <p class="text-center mb-14px">
                 <span class="badge badge-primary">MEMBER</span>
             </p>
 
-            <hr class="divider" style="margin:14px 0;">
+            <hr class="divider my-14px">
 
             <div class="info-row">
                 <span class="info-row-label">Status</span>
@@ -92,7 +92,7 @@
             </div>
             <div class="info-row">
                 <span class="info-row-label">Email</span>
-                <span class="info-row-value" style="font-size:12px;"><c:out value="${member.email}"/></span>
+                <span class="info-row-value small"><c:out value="${member.email}"/></span>
             </div>
         </div>
 
@@ -125,8 +125,8 @@
 
                 <hr class="divider">
 
-                <p class="fw-bold" style="font-size:13px;margin-bottom:4px;">Change Password</p>
-                <p class="text-muted" style="font-size:12px;margin-bottom:12px;">
+                <p class="fw-bold fs-13 mb-4px">Change Password</p>
+                <p class="text-muted small mb-12px">
                     Leave blank to keep current password
                 </p>
 
@@ -136,7 +136,7 @@
                            minlength="8" placeholder="Minimum 8 characters">
                 </div>
 
-                <button type="submit" class="btn btn-primary w-100" style="margin-top:8px;">
+                <button type="submit" class="btn btn-primary w-100 mt-8px">
                     Save Changes
                 </button>
             </form>

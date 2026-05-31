@@ -19,7 +19,7 @@
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
-                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                    <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
             </div>
         </header>
@@ -88,12 +88,11 @@
                             <td>
                                 <form method="post"
                                       action="${pageContext.request.contextPath}/admin/members"
-                                      style="display:inline-flex;align-items:center;gap:6px;">
+                                      class="inline-actions">
                                     <input type="hidden" name="_csrf"    value="${csrfToken}">
                                     <input type="hidden" name="action"   value="updateStatus">
                                     <input type="hidden" name="memberId" value="${m.id}">
-                                    <select name="status" class="form-select"
-                                            style="width:auto;padding:4px 28px 4px 8px;font-size:12px;">
+                                    <select name="status" class="form-select select-inline">
                                         <option value="ACTIVE">Active</option>
                                         <option value="INACTIVE">Inactive</option>
                                         <option value="SUSPENDED">Suspended</option>
@@ -105,8 +104,7 @@
                         </c:forEach>
                         <c:if test="${empty members}">
                             <tr>
-                                <td colspan="9" class="text-center text-muted"
-                                    style="padding:40px 14px;">No members found.</td>
+                                <td colspan="9" class="text-center text-muted empty-pad-40">No members found.</td>
                             </tr>
                         </c:if>
                     </tbody>

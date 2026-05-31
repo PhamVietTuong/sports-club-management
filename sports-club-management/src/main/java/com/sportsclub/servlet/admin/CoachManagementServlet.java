@@ -45,6 +45,12 @@ public class CoachManagementServlet extends HttpServlet {
                 int    experience     = Integer.parseInt(req.getParameter("experience"));
                 double salary         = Double.parseDouble(req.getParameter("salary"));
 
+                if (isBlank(fullName)) {
+                    resp.sendRedirect(req.getContextPath() + "/admin/coaches?error=1");
+                    return;
+                }
+                fullName = fullName.trim();
+
                 String hash   = BCryptUtil.hashPassword(password);
                 int    userId = userDAO.insert(username, hash, email, phone, "COACH");
                 if (userId > 0) {
@@ -52,9 +58,14 @@ public class CoachManagementServlet extends HttpServlet {
                 }
             } else if ("update".equals(action)) {
                 int    id             = Integer.parseInt(req.getParameter("id"));
+                String fullName       = req.getParameter("fullName");
+                if (isBlank(fullName)) {
+                    resp.sendRedirect(req.getContextPath() + "/admin/coaches?error=1");
+                    return;
+                }
                 Coach  coach          = coachDAO.findById(id);
                 if (coach != null) {
-                    coach.setFullName(req.getParameter("fullName"));
+                    coach.setFullName(fullName.trim());
                     coach.setSpecialization(req.getParameter("specialization"));
                     coach.setBio(req.getParameter("bio"));
                     coach.setExperience(Integer.parseInt(req.getParameter("experience")));
@@ -66,5 +77,9 @@ public class CoachManagementServlet extends HttpServlet {
         } catch (Exception e) {
             resp.sendRedirect(req.getContextPath() + "/admin/coaches?error=1");
         }
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
     }
 }

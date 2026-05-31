@@ -7,54 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register — Sports Club</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
-    <style>
-        .register-shell {
-            min-height: 100vh;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            background: var(--bg);
-            padding: 40px 20px;
-        }
-        .register-card {
-            width: 100%;
-            max-width: 560px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 36px 36px 28px;
-        }
-        .register-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
-        }
-        .register-monogram {
-            width: 36px;
-            height: 36px;
-            background: var(--primary);
-            color: #fff;
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            font-size: 14px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .register-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--text);
-        }
-        .register-subtitle {
-            font-size: 13px;
-            color: var(--muted);
-            margin-top: 2px;
-        }
-    </style>
 </head>
 <body>
 <div class="register-shell">
@@ -125,13 +77,13 @@
                        required placeholder="Re-enter password">
             </div>
 
-            <button type="submit" class="btn btn-primary w-100" style="margin-top:8px;">
+            <button type="submit" class="btn btn-primary w-100 mt-8px">
                 Create Account
             </button>
         </form>
 
         <hr class="divider">
-        <p class="text-center text-muted" style="font-size:13px;">
+        <p class="text-center text-muted fs-13">
             Already have an account?
             <a href="${pageContext.request.contextPath}/login">Sign In</a>
         </p>

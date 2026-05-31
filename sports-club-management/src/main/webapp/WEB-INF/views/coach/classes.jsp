@@ -39,8 +39,8 @@
             </a>
         </nav>
         <div class="sidebar-footer">
-            <div style="padding:0 2px 10px;font-size:12px;color:var(--muted);">
-                <div style="font-weight:600;color:var(--text);margin-bottom:2px;">
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name">
                     <c:out value="${sessionScope.loggedInUser.username}"/>
                 </div>
                 Coach
@@ -66,7 +66,7 @@
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Coach)</span>
                 <div class="user-avatar">
-                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                    <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
             </div>
         </header>
@@ -95,7 +95,7 @@
                     </c:choose>
                     <div class="class-card-body">
                         <h5 class="fw-bold"><c:out value="${tc.name}"/></h5>
-                        <div style="margin-bottom:10px;">
+                        <div class="mb-2">
                             <c:choose>
                                 <c:when test="${tc.level eq 'BEGINNER'}">
                                     <span class="badge badge-success">BEGINNER</span>
@@ -111,16 +111,16 @@
                                 </c:otherwise>
                             </c:choose>
                         </div>
-                        <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">
+                        <p class="fs-13 text-muted mb-8px">
                             Enrolled:
-                            <strong style="color:var(--text);">
+                            <strong class="text-default">
                                 <c:out value="${tc.currentEnrolled}"/>
                             </strong>
                             / <c:out value="${tc.capacity}"/>
                         </p>
                         <div class="progress-bar-wrap">
                             <div class="progress-bar-fill ${tc.currentEnrolled >= tc.capacity ? 'full' : tc.currentEnrolled < tc.capacity * 0.5 ? 'low' : ''}"
-                                 style="width: ${tc.currentEnrolled * 100 / (tc.capacity > 0 ? tc.capacity : 1)}%"></div>
+                                 data-width="${tc.currentEnrolled * 100 / (tc.capacity > 0 ? tc.capacity : 1)}"></div>
                         </div>
                     </div>
                     <div class="class-card-footer">
@@ -129,7 +129,7 @@
                 </div>
                 </c:forEach>
                 <c:if test="${empty myClasses}">
-                    <p class="text-muted" style="grid-column:1/-1;padding:24px 0;">
+                    <p class="text-muted col-span-full pad-24-0">
                         No classes assigned yet.
                     </p>
                 </c:if>
@@ -176,8 +176,7 @@
                             </c:forEach>
                             <c:if test="${empty enrolledMembers}">
                                 <tr>
-                                    <td colspan="3" class="text-center text-muted"
-                                        style="padding:32px 14px;">No members enrolled.</td>
+                                    <td colspan="3" class="text-center text-muted empty-pad-32">No members enrolled.</td>
                                 </tr>
                             </c:if>
                         </tbody>
@@ -188,5 +187,6 @@
         </div>
     </div>
 </div>
+<script src="${pageContext.request.contextPath}/assets/js/app.js"></script>
 </body>
 </html>

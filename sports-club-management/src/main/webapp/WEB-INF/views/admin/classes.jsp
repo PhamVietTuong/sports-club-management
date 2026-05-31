@@ -18,7 +18,7 @@
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
-                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                    <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
             </div>
         </header>
@@ -85,7 +85,7 @@
                                 <c:out value="${tc.currentEnrolled}"/>
                                 <div class="progress-bar-wrap">
                                     <div class="progress-bar-fill ${tc.currentEnrolled >= tc.capacity ? 'full' : tc.currentEnrolled < tc.capacity * 0.5 ? 'low' : ''}"
-                                         style="width: ${tc.currentEnrolled * 100 / (tc.capacity > 0 ? tc.capacity : 1)}%"></div>
+                                         data-width="${tc.currentEnrolled * 100 / (tc.capacity > 0 ? tc.capacity : 1)}"></div>
                                 </div>
                             </td>
                             <td>
@@ -102,7 +102,7 @@
                                 <%-- PROTOTYPE — clone this class --%>
                                 <form method="post"
                                       action="${pageContext.request.contextPath}/admin/classes"
-                                      style="display:inline;">
+                                      class="d-inline">
                                     <input type="hidden" name="_csrf"      value="${csrfToken}">
                                     <input type="hidden" name="action"     value="clone">
                                     <input type="hidden" name="templateId" value="${tc.id}">
@@ -121,8 +121,7 @@
                         </c:forEach>
                         <c:if test="${empty classes}">
                             <tr>
-                                <td colspan="8" class="text-center text-muted"
-                                    style="padding:40px 14px;">No classes found.</td>
+                                <td colspan="8" class="text-center text-muted empty-pad-40">No classes found.</td>
                             </tr>
                         </c:if>
                     </tbody>
@@ -143,14 +142,14 @@
             <form method="post" action="${pageContext.request.contextPath}/admin/classes">
                 <input type="hidden" name="_csrf"  value="${csrfToken}">
                 <input type="hidden" name="action" value="add">
-                <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
-                    <div class="form-group" style="margin-bottom:0;">
+                <div class="modal-body form-stack">
+                    <div class="form-group mb-0">
                         <label class="form-label">Class Name</label>
                         <input type="text" name="name" class="form-control"
                                required maxlength="100" placeholder="e.g. Morning Yoga">
                     </div>
                     <div class="form-grid-2">
-                        <div class="form-group" style="margin-bottom:0;">
+                        <div class="form-group mb-0">
                             <label class="form-label">Coach</label>
                             <select name="coachId" class="form-select" required>
                                 <option value="">Select coach...</option>
@@ -159,7 +158,7 @@
                                 </c:forEach>
                             </select>
                         </div>
-                        <div class="form-group" style="margin-bottom:0;">
+                        <div class="form-group mb-0">
                             <label class="form-label">Level</label>
                             <select name="level" class="form-select">
                                 <option value="BEGINNER">Beginner</option>
@@ -168,11 +167,11 @@
                             </select>
                         </div>
                     </div>
-                    <div class="form-group" style="margin-bottom:0;">
+                    <div class="form-group mb-0">
                         <label class="form-label">Capacity</label>
                         <input type="number" name="capacity" class="form-control" min="1" value="20">
                     </div>
-                    <div class="form-group" style="margin-bottom:0;">
+                    <div class="form-group mb-0">
                         <label class="form-label">Description</label>
                         <textarea name="description" class="form-control" rows="3"
                                   placeholder="Brief description of the class..."></textarea>
@@ -188,5 +187,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/app.js"></script>
 </body>
 </html>
