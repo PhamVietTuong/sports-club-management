@@ -7,26 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedules — Admin</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
-    <style>
-        .day-chip {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-        .day-MON, .day-MONDAY    { background: rgba(59,130,246,0.15); color: #60a5fa; }
-        .day-TUE, .day-TUESDAY   { background: rgba(139,92,246,0.15); color: #a78bfa; }
-        .day-WED, .day-WEDNESDAY { background: rgba(34,197,94,0.15);  color: #4ade80; }
-        .day-THU, .day-THURSDAY  { background: rgba(245,158,11,0.15); color: #fbbf24; }
-        .day-FRI, .day-FRIDAY    { background: rgba(232,73,15,0.15);  color: #fb923c; }
-        .day-SAT, .day-SATURDAY  { background: rgba(236,72,153,0.15); color: #f472b6; }
-        .day-SUN, .day-SUNDAY    { background: rgba(239,68,68,0.15);  color: #f87171; }
-        .action-cell { display: flex; gap: 8px; align-items: center; }
-    </style>
 </head>
 <body>
 <c:set var="activeNav" value="schedules"/>
@@ -39,7 +19,7 @@
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
-                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                    <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
             </div>
         </header>
@@ -75,7 +55,7 @@
                     <tbody>
                         <c:forEach var="s" items="${schedules}">
                         <tr>
-                            <td style="color:var(--muted);font-size:12px;"><c:out value="${s.id}"/></td>
+                            <td class="text-muted small"><c:out value="${s.id}"/></td>
                             <td class="fw-bold"><c:out value="${s.className}"/></td>
                             <td>
                                 <span class="day-chip day-${s.dayOfWeek}">
@@ -83,24 +63,24 @@
                                 </span>
                             </td>
                             <td>
-                                <span style="font-family:'Syne',sans-serif;font-weight:600;">
+                                <span class="font-display-600">
                                     <c:out value="${s.startTime}"/>
                                 </span>
                             </td>
                             <td>
-                                <span style="font-family:'Syne',sans-serif;font-weight:600;">
+                                <span class="font-display-600">
                                     <c:out value="${s.endTime}"/>
                                 </span>
                             </td>
                             <td>
-                                <span style="color:var(--muted);">
+                                <span class="text-muted">
                                     <c:out value="${s.room}"/>
                                 </span>
                             </td>
                             <td>
                                 <div class="action-cell">
                                     <%-- PROTOTYPE — clone this schedule --%>
-                                    <form method="post" action="${pageContext.request.contextPath}/admin/schedules" style="display:inline;">
+                                    <form method="post" action="${pageContext.request.contextPath}/admin/schedules" class="d-inline">
                                         <input type="hidden" name="_csrf"    value="${csrfToken}">
                                         <input type="hidden" name="action"   value="clone">
                                         <input type="hidden" name="sourceId" value="${s.id}">
@@ -112,12 +92,12 @@
                                             Clone
                                         </button>
                                     </form>
-                                    <form method="post" action="${pageContext.request.contextPath}/admin/schedules" style="display:inline;">
+                                    <form method="post" action="${pageContext.request.contextPath}/admin/schedules" class="d-inline"
+                                          data-confirm="Delete this schedule?">
                                         <input type="hidden" name="_csrf"  value="${csrfToken}">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id"     value="${s.id}">
-                                        <button type="submit" class="btn btn-danger btn-sm"
-                                                onclick="return confirm('Delete this schedule?')">
+                                        <button type="submit" class="btn btn-danger btn-sm">
                                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                                 <polyline points="3 6 5 6 21 6"/>
                                                 <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -133,7 +113,7 @@
                         </c:forEach>
                         <c:if test="${empty schedules}">
                             <tr>
-                                <td colspan="7" class="text-center text-muted" style="padding:36px 14px;">
+                                <td colspan="7" class="text-center text-muted empty-pad-36">
                                     No schedules found. Add one to get started.
                                 </td>
                             </tr>
@@ -203,5 +183,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/app.js"></script>
 </body>
 </html>

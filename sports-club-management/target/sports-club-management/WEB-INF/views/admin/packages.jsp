@@ -7,67 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Packages — Admin</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
-    <style>
-        .pkg-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.15s, box-shadow 0.15s;
-            overflow: hidden;
-        }
-        .pkg-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-        }
-        .pkg-card.inactive {
-            opacity: 0.55;
-        }
-        .pkg-card-accent {
-            height: 3px;
-            background: var(--primary);
-        }
-        .pkg-card.inactive .pkg-card-accent {
-            background: var(--muted);
-        }
-        .pkg-card-body {
-            padding: 20px;
-            flex: 1;
-        }
-        .pkg-price {
-            font-family: 'Syne', sans-serif;
-            font-weight: 800;
-            font-size: 32px;
-            color: var(--text);
-            line-height: 1;
-            margin: 12px 0 4px;
-        }
-        .pkg-price-sub {
-            font-size: 12px;
-            color: var(--muted);
-            margin-bottom: 16px;
-        }
-        .pkg-stat-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border);
-            font-size: 13px;
-        }
-        .pkg-stat-row:last-of-type {
-            border-bottom: none;
-        }
-        .pkg-stat-label { color: var(--muted); }
-        .pkg-stat-value { color: var(--text); font-weight: 600; }
-        .pkg-card-footer {
-            padding: 14px 20px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 8px;
-        }
-    </style>
 </head>
 <body>
 <c:set var="activeNav" value="packages"/>
@@ -80,7 +19,7 @@
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
-                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                    <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
             </div>
         </header>
@@ -105,8 +44,8 @@
                 <div class="pkg-card ${pkg.active ? '' : 'inactive'}">
                     <div class="pkg-card-accent"></div>
                     <div class="pkg-card-body">
-                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                            <h5 style="font-size:16px;margin-bottom:4px;">
+                        <div class="flex-between-start">
+                            <h5 class="fs-16 mb-4px">
                                 <c:out value="${pkg.name}"/>
                             </h5>
                             <c:choose>
@@ -118,7 +57,7 @@
                                 </c:otherwise>
                             </c:choose>
                         </div>
-                        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;min-height:36px;">
+                        <p class="fs-12-5 text-muted mb-12px min-h-36">
                             <c:out value="${pkg.description}"/>
                         </p>
 
@@ -141,7 +80,7 @@
                     </div>
                     <div class="pkg-card-footer">
                         <%-- PROTOTYPE — clone this package at 120% price --%>
-                        <form method="post" action="${pageContext.request.contextPath}/admin/packages" style="flex:1;">
+                        <form method="post" action="${pageContext.request.contextPath}/admin/packages" class="flex-1">
                             <input type="hidden" name="_csrf"      value="${csrfToken}">
                             <input type="hidden" name="action"     value="clone">
                             <input type="hidden" name="templateId" value="${pkg.id}">
@@ -157,7 +96,7 @@
                 </div>
                 </c:forEach>
                 <c:if test="${empty packages}">
-                    <p class="text-muted" style="grid-column:1/-1;padding:24px 0;">
+                    <p class="text-muted col-span-full pad-24-0">
                         No packages found. Add one to get started.
                     </p>
                 </c:if>

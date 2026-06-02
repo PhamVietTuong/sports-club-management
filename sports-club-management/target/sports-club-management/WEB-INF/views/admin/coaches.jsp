@@ -19,7 +19,7 @@
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
-                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                    <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
             </div>
         </header>
@@ -58,18 +58,16 @@
                     <tbody>
                         <c:forEach var="c" items="${coaches}">
                         <tr>
-                            <td style="color:var(--muted);font-size:12px;"><c:out value="${c.id}"/></td>
+                            <td class="text-muted small"><c:out value="${c.id}"/></td>
                             <td>
-                                <div style="display:flex;align-items:center;gap:10px;">
-                                    <div style="width:32px;height:32px;border-radius:50%;background:rgba(232,73,15,0.15);
-                                                color:var(--primary);font-family:'Syne',sans-serif;font-weight:700;
-                                                font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                        ${c.fullName.substring(0,1).toUpperCase()}
+                                <div class="flex-center-gap10">
+                                    <div class="table-avatar">
+                                        <c:out value="${not empty c.fullName ? c.fullName.substring(0,1).toUpperCase() : '?'}"/>
                                     </div>
                                     <span class="fw-bold"><c:out value="${c.fullName}"/></span>
                                 </div>
                             </td>
-                            <td style="color:var(--muted);"><c:out value="${c.email}"/></td>
+                            <td class="text-muted"><c:out value="${c.email}"/></td>
                             <td>
                                 <c:if test="${not empty c.specialization}">
                                     <span class="badge badge-info"><c:out value="${c.specialization}"/></span>
@@ -79,13 +77,13 @@
                                 </c:if>
                             </td>
                             <td>
-                                <span style="color:var(--text);">
+                                <span class="text-default">
                                     <c:out value="${c.experience}"/>
                                 </span>
-                                <span style="color:var(--muted);font-size:12px;"> yr(s)</span>
+                                <span class="text-muted small"> yr(s)</span>
                             </td>
                             <td>
-                                <span style="color:var(--success);font-weight:600;">
+                                <span class="text-success fw-600">
                                     $<c:out value="${c.salary}"/>
                                 </span>
                             </td>
@@ -93,7 +91,7 @@
                         </c:forEach>
                         <c:if test="${empty coaches}">
                             <tr>
-                                <td colspan="6" class="text-center text-muted" style="padding:36px 14px;">
+                                <td colspan="6" class="text-center text-muted empty-pad-36">
                                     No coaches found.
                                 </td>
                             </tr>

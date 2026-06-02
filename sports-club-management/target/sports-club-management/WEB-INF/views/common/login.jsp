@@ -48,11 +48,11 @@
                            required autocomplete="current-password"
                            placeholder="Enter your password">
                 </div>
-                <button type="submit" class="btn btn-primary w-100" style="margin-top:8px;">Sign In</button>
+                <button type="submit" class="btn btn-primary w-100 mt-8px">Sign In</button>
             </form>
 
             <hr class="divider">
-            <p class="text-center text-muted" style="font-size:13px;">
+            <p class="text-center text-muted fs-13">
                 Don't have an account?
                 <a href="${pageContext.request.contextPath}/register">Register</a>
             </p>

@@ -39,8 +39,8 @@
             </a>
         </nav>
         <div class="sidebar-footer">
-            <div style="padding:0 2px 10px;font-size:12px;color:var(--muted);">
-                <div style="font-weight:600;color:var(--text);margin-bottom:2px;">
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name">
                     <c:out value="${sessionScope.loggedInUser.username}"/>
                 </div>
                 Coach
@@ -66,7 +66,7 @@
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Coach)</span>
                 <div class="user-avatar">
-                    ${sessionScope.loggedInUser.username.substring(0,1).toUpperCase()}
+                    <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
             </div>
         </header>
@@ -109,7 +109,7 @@
                     <div class="stat-spec-sub">
                         <c:out value="${coach.experience}"/> year(s) experience
                     </div>
-                    <div class="stat-label" style="margin-top:6px;">Specialization</div>
+                    <div class="stat-label mt-6px">Specialization</div>
                 </div>
             </div>
 
@@ -137,8 +137,7 @@
                         </c:forEach>
                         <c:if test="${empty schedules}">
                             <tr>
-                                <td colspan="4" class="text-center text-muted"
-                                    style="padding:32px 14px;">No schedule assigned.</td>
+                                <td colspan="4" class="text-center text-muted empty-pad-32">No schedule assigned.</td>
                             </tr>
                         </c:if>
                     </tbody>

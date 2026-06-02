@@ -21,7 +21,7 @@
         <a href="${pageContext.request.contextPath}/member/profile">My Profile</a>
     </div>
     <div class="member-nav-actions">
-        <form method="post" action="${pageContext.request.contextPath}/logout" style="display:inline;">
+        <form method="post" action="${pageContext.request.contextPath}/logout" class="d-inline">
             <input type="hidden" name="_csrf" value="${csrfToken}">
             <button type="submit" class="btn btn-ghost btn-sm">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -69,7 +69,7 @@
             </c:choose>
             <div class="class-card-body">
                 <h5 class="fw-bold"><c:out value="${tc.name}"/></h5>
-                <div style="margin-bottom:6px;">
+                <div class="mb-1">
                     <c:choose>
                         <c:when test="${tc.level eq 'BEGINNER'}">
                             <span class="badge badge-success">BEGINNER</span>
@@ -89,10 +89,10 @@
                 <p class="description"><c:out value="${tc.description}"/></p>
                 <div class="progress-bar-wrap">
                     <div class="progress-bar-fill ${(tc.capacity - tc.availableSlots) >= tc.capacity ? 'full' : (tc.capacity - tc.availableSlots) < tc.capacity * 0.5 ? 'low' : ''}"
-                         style="width: ${(tc.capacity - tc.availableSlots) * 100 / (tc.capacity > 0 ? tc.capacity : 1)}%"></div>
+                         data-width="${(tc.capacity - tc.availableSlots) * 100 / (tc.capacity > 0 ? tc.capacity : 1)}"></div>
                 </div>
                 <p class="capacity-text">
-                    <span style="color:var(--text);font-weight:600;">${tc.capacity - tc.availableSlots}</span>
+                    <span class="text-default fw-600">${tc.capacity - tc.availableSlots}</span>
                     / <c:out value="${tc.capacity}"/> slots filled
                 </p>
             </div>
@@ -114,12 +114,13 @@
         </div>
         </c:forEach>
         <c:if test="${empty classes}">
-            <p class="text-muted" style="grid-column:1/-1;padding:24px 0;">
+            <p class="text-muted col-span-full pad-24-0">
                 No classes available at this time.
             </p>
         </c:if>
     </div>
 
 </div>
+<script src="${pageContext.request.contextPath}/assets/js/app.js"></script>
 </body>
 </html>
