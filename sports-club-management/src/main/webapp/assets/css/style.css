@@ -980,6 +980,59 @@ textarea.form-control {
    MODAL DARK THEME
    ===================== */
 
+/* Core modal layout — Bootstrap's JS toggles .show / display:block, but the
+   Bootstrap stylesheet is not loaded, so these positioning rules must live here.
+   Without them the modal renders in normal flow and overlaps the page/sidebar. */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1055;
+  display: none;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: 0;
+}
+
+.modal-dialog {
+  position: relative;
+  width: auto;
+  max-width: 500px;
+  margin: 1.75rem auto;
+  transition: transform 0.25s ease-out;
+  transform: translateY(-40px);
+}
+
+.modal.show .modal-dialog {
+  transform: none;
+}
+
+.modal-dialog.modal-lg,
+.modal-lg .modal-dialog,
+.modal-lg {
+  max-width: 800px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  opacity: 0;
+  transition: opacity 0.15s linear;
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
 .modal-content {
   background: var(--surface);
   border: 1px solid var(--border);

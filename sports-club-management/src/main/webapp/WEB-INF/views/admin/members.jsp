@@ -30,20 +30,39 @@
                     <div class="page-title">Thành viên</div>
                     <div class="page-subtitle">Quản lý tài khoản và trạng thái thành viên</div>
                 </div>
-                <div class="filter-tabs">
-                    <a href="${pageContext.request.contextPath}/admin/members"
-                       class="filter-tab ${empty statusFilter ? 'active' : ''}">Tất cả</a>
-                    <a href="${pageContext.request.contextPath}/admin/members?status=ACTIVE"
-                       class="filter-tab ${statusFilter eq 'ACTIVE' ? 'active' : ''}">Hoạt động</a>
-                    <a href="${pageContext.request.contextPath}/admin/members?status=INACTIVE"
-                       class="filter-tab ${statusFilter eq 'INACTIVE' ? 'active' : ''}">Ngừng hoạt động</a>
-                    <a href="${pageContext.request.contextPath}/admin/members?status=SUSPENDED"
-                       class="filter-tab ${statusFilter eq 'SUSPENDED' ? 'active' : ''}">Tạm khóa</a>
+                <div class="flex-center-gap10">
+                    <div class="filter-tabs">
+                        <a href="${pageContext.request.contextPath}/admin/members"
+                           class="filter-tab ${empty statusFilter ? 'active' : ''}">Tất cả</a>
+                        <a href="${pageContext.request.contextPath}/admin/members?status=ACTIVE"
+                           class="filter-tab ${statusFilter eq 'ACTIVE' ? 'active' : ''}">Hoạt động</a>
+                        <a href="${pageContext.request.contextPath}/admin/members?status=INACTIVE"
+                           class="filter-tab ${statusFilter eq 'INACTIVE' ? 'active' : ''}">Ngừng hoạt động</a>
+                        <a href="${pageContext.request.contextPath}/admin/members?status=SUSPENDED"
+                           class="filter-tab ${statusFilter eq 'SUSPENDED' ? 'active' : ''}">Tạm khóa</a>
+                    </div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Thêm thành viên
+                    </button>
                 </div>
             </div>
 
             <c:if test="${not empty error}">
                 <div class="alert alert-danger"><c:out value="${error}"/></div>
+            </c:if>
+            <c:if test="${not empty param.error}">
+                <div class="alert alert-danger">
+                    <c:choose>
+                        <c:when test="${param.error eq 'fields'}">Vui lòng điền đầy đủ các trường bắt buộc.</c:when>
+                        <c:when test="${param.error eq 'pwd'}">Mật khẩu phải có ít nhất 8 ký tự.</c:when>
+                        <c:when test="${param.error eq 'dupuser'}">Tên đăng nhập đã được sử dụng.</c:when>
+                        <c:when test="${param.error eq 'dupemail'}">Email đã được đăng ký.</c:when>
+                        <c:otherwise>Không thể thêm thành viên. Vui lòng thử lại.</c:otherwise>
+                    </c:choose>
+                </div>
             </c:if>
 
             <div class="table-wrap">
@@ -113,5 +132,81 @@
         </div>
     </div>
 </div>
+
+<!-- Add Member Modal -->
+<div class="modal fade" id="addMemberModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm thành viên mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="${pageContext.request.contextPath}/admin/members">
+                <input type="hidden" name="_csrf"  value="${csrfToken}">
+                <input type="hidden" name="action" value="add">
+                <div class="modal-body">
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Tên đăng nhập <span class="req">*</span></label>
+                            <input type="text" name="username" class="form-control" required maxlength="50" placeholder="vd: member_jane">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Họ và tên <span class="req">*</span></label>
+                            <input type="text" name="fullName" class="form-control" required maxlength="100" placeholder="Tên hiển thị đầy đủ">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email <span class="req">*</span></label>
+                            <input type="email" name="email" class="form-control" required placeholder="member@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Số điện thoại</label>
+                            <input type="text" name="phone" class="form-control" maxlength="20" placeholder="+84 555 000 0000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Mật khẩu <span class="req">*</span></label>
+                            <input type="password" name="password" class="form-control" required minlength="8" placeholder="Tối thiểu 8 ký tự">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Giới tính</label>
+                            <select name="gender" class="form-select">
+                                <option value="">— Chọn —</option>
+                                <option value="MALE">Nam</option>
+                                <option value="FEMALE">Nữ</option>
+                                <option value="OTHER">Khác</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ngày sinh</label>
+                            <input type="date" name="dateOfBirth" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Gói tập</label>
+                            <select name="packageId" class="form-select">
+                                <option value="0">— Không có —</option>
+                                <c:forEach var="p" items="${packages}">
+                                    <option value="${p.id}"><c:out value="${p.name}"/></option>
+                                </c:forEach>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ngày hết hạn</label>
+                            <input type="date" name="expiryDate" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Địa chỉ</label>
+                        <input type="text" name="address" class="form-control" maxlength="255" placeholder="Địa chỉ liên hệ">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu thành viên</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
