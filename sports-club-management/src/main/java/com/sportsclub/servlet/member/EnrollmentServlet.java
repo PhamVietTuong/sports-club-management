@@ -45,7 +45,7 @@ public class EnrollmentServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/member/classes.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load classes.");
+            req.setAttribute("error", "Không thể tải danh sách lớp học.");
             req.getRequestDispatcher("/WEB-INF/views/member/classes.jsp").forward(req, resp);
         }
     }
@@ -62,20 +62,20 @@ public class EnrollmentServlet extends HttpServlet {
             if ("enroll".equals(action)) {
                 TrainingClass tc = classDAO.findById(classId);
                 if (tc == null || !tc.isActive()) {
-                    req.getSession().setAttribute("flash", "Class not available.");
+                    req.getSession().setAttribute("flash", "Lớp học không khả dụng.");
                 } else if (tc.getAvailableSlots() <= 0) {
-                    req.getSession().setAttribute("flash", "Class is full.");
+                    req.getSession().setAttribute("flash", "Lớp học đã đầy.");
                 } else if (enrollmentDAO.isEnrolled(member.getId(), classId)) {
-                    req.getSession().setAttribute("flash", "Already enrolled.");
+                    req.getSession().setAttribute("flash", "Bạn đã đăng ký rồi.");
                 } else {
                     enrollmentDAO.insert(member.getId(), classId);
                     classDAO.incrementEnrolled(classId);
-                    req.getSession().setAttribute("flash", "Enrolled successfully!");
+                    req.getSession().setAttribute("flash", "Đăng ký thành công!");
                 }
             } else if ("cancel".equals(action)) {
                 enrollmentDAO.cancel(member.getId(), classId);
                 classDAO.decrementEnrolled(classId);
-                req.getSession().setAttribute("flash", "Enrollment cancelled.");
+                req.getSession().setAttribute("flash", "Đã hủy đăng ký.");
             }
             resp.sendRedirect(req.getContextPath() + "/member/classes");
         } catch (Exception e) {

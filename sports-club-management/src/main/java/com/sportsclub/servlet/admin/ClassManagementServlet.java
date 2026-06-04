@@ -40,7 +40,7 @@ public class ClassManagementServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/admin/classes.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load classes.");
+            req.setAttribute("error", "Không thể tải danh sách lớp học.");
             req.getRequestDispatcher("/WEB-INF/views/admin/classes.jsp").forward(req, resp);
         }
     }

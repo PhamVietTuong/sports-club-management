@@ -1,11 +1,11 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classes — Admin</title>
+    <title>Lớp học — Quản trị</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
     <%@ include file="navbar.jsp" %>
     <div class="main-content">
         <header class="top-bar">
-            <span class="top-bar-title">Classes</span>
+            <span class="top-bar-title">Lớp học</span>
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
@@ -26,8 +26,8 @@
         <div class="page-body">
             <div class="page-header">
                 <div>
-                    <div class="page-title">Classes</div>
-                    <div class="page-subtitle">Manage training classes and enrollments</div>
+                    <div class="page-title">Lớp học</div>
+                    <div class="page-subtitle">Quản lý các lớp tập luyện và đăng ký</div>
                 </div>
                 <button class="btn btn-primary"
                         data-bs-toggle="modal" data-bs-target="#addClassModal">
@@ -36,7 +36,7 @@
                         <line x1="12" y1="5" x2="12" y2="19"/>
                         <line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
-                    Add Class
+                    Thêm lớp học
                 </button>
             </div>
 
@@ -49,13 +49,13 @@
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Name</th>
-                            <th>Coach</th>
-                            <th>Level</th>
-                            <th>Capacity</th>
-                            <th>Enrolled</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th>Tên</th>
+                            <th>Huấn luyện viên</th>
+                            <th>Cấp độ</th>
+                            <th>Sức chứa</th>
+                            <th>Đã đăng ký</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,13 +67,13 @@
                             <td>
                                 <c:choose>
                                     <c:when test="${tc.level eq 'BEGINNER'}">
-                                        <span class="badge badge-success">BEGINNER</span>
+                                        <span class="badge badge-success">CƠ BẢN</span>
                                     </c:when>
                                     <c:when test="${tc.level eq 'INTERMEDIATE'}">
-                                        <span class="badge badge-warning">INTERMEDIATE</span>
+                                        <span class="badge badge-warning">TRUNG CẤP</span>
                                     </c:when>
                                     <c:when test="${tc.level eq 'ADVANCED'}">
-                                        <span class="badge badge-danger">ADVANCED</span>
+                                        <span class="badge badge-danger">NÂNG CAO</span>
                                     </c:when>
                                     <c:otherwise>
                                         <span class="badge badge-muted"><c:out value="${tc.level}"/></span>
@@ -91,10 +91,10 @@
                             <td>
                                 <c:choose>
                                     <c:when test="${tc.active}">
-                                        <span class="badge badge-success">Active</span>
+                                        <span class="badge badge-success">Hoạt động</span>
                                     </c:when>
                                     <c:otherwise>
-                                        <span class="badge badge-muted">Inactive</span>
+                                        <span class="badge badge-muted">Ngừng hoạt động</span>
                                     </c:otherwise>
                                 </c:choose>
                             </td>
@@ -107,13 +107,13 @@
                                     <input type="hidden" name="action"     value="clone">
                                     <input type="hidden" name="templateId" value="${tc.id}">
                                     <button type="submit" class="btn btn-ghost btn-sm"
-                                            title="Clone (Prototype)">
+                                            title="Nhân bản (Prototype)">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                                              stroke="currentColor" stroke-width="1.5">
                                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                                         </svg>
-                                        Clone
+                                        Nhân bản
                                     </button>
                                 </form>
                             </td>
@@ -121,7 +121,7 @@
                         </c:forEach>
                         <c:if test="${empty classes}">
                             <tr>
-                                <td colspan="8" class="text-center text-muted empty-pad-40">No classes found.</td>
+                                <td colspan="8" class="text-center text-muted empty-pad-40">Không tìm thấy lớp học nào.</td>
                             </tr>
                         </c:if>
                     </tbody>
@@ -136,7 +136,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addClassModalLabel">Add New Class</h5>
+                <h5 class="modal-title" id="addClassModalLabel">Thêm lớp học mới</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="post" action="${pageContext.request.contextPath}/admin/classes">
@@ -144,42 +144,42 @@
                 <input type="hidden" name="action" value="add">
                 <div class="modal-body form-stack">
                     <div class="form-group mb-0">
-                        <label class="form-label">Class Name</label>
+                        <label class="form-label">Tên lớp học</label>
                         <input type="text" name="name" class="form-control"
-                               required maxlength="100" placeholder="e.g. Morning Yoga">
+                               required maxlength="100" placeholder="vd: Yoga buổi sáng">
                     </div>
                     <div class="form-grid-2">
                         <div class="form-group mb-0">
-                            <label class="form-label">Coach</label>
+                            <label class="form-label">Huấn luyện viên</label>
                             <select name="coachId" class="form-select" required>
-                                <option value="">Select coach...</option>
+                                <option value="">Chọn huấn luyện viên...</option>
                                 <c:forEach var="coach" items="${coaches}">
                                     <option value="${coach.id}"><c:out value="${coach.fullName}"/></option>
                                 </c:forEach>
                             </select>
                         </div>
                         <div class="form-group mb-0">
-                            <label class="form-label">Level</label>
+                            <label class="form-label">Cấp độ</label>
                             <select name="level" class="form-select">
-                                <option value="BEGINNER">Beginner</option>
-                                <option value="INTERMEDIATE">Intermediate</option>
-                                <option value="ADVANCED">Advanced</option>
+                                <option value="BEGINNER">Cơ bản</option>
+                                <option value="INTERMEDIATE">Trung cấp</option>
+                                <option value="ADVANCED">Nâng cao</option>
                             </select>
                         </div>
                     </div>
                     <div class="form-group mb-0">
-                        <label class="form-label">Capacity</label>
+                        <label class="form-label">Sức chứa</label>
                         <input type="number" name="capacity" class="form-control" min="1" value="20">
                     </div>
                     <div class="form-group mb-0">
-                        <label class="form-label">Description</label>
+                        <label class="form-label">Mô tả</label>
                         <textarea name="description" class="form-control" rows="3"
-                                  placeholder="Brief description of the class..."></textarea>
+                                  placeholder="Mô tả ngắn gọn về lớp học..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Save Class</button>
-                    <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Lưu lớp học</button>
+                    <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Hủy</button>
                 </div>
             </form>
         </div>

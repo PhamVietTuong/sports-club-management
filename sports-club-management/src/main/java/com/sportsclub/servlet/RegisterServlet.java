@@ -44,23 +44,23 @@ public class RegisterServlet extends HttpServlet {
         try {
             // Input validation
             if (isBlank(username) || isBlank(email) || isBlank(password) || isBlank(fullName)) {
-                setError(req, resp, "All required fields must be filled.");
+                setError(req, resp, "Vui lòng điền đầy đủ các trường bắt buộc.");
                 return;
             }
             if (!password.equals(confirm)) {
-                setError(req, resp, "Passwords do not match.");
+                setError(req, resp, "Mật khẩu không khớp.");
                 return;
             }
             if (password.length() < 8) {
-                setError(req, resp, "Password must be at least 8 characters.");
+                setError(req, resp, "Mật khẩu phải có ít nhất 8 ký tự.");
                 return;
             }
             if (userDAO.findByUsername(username) != null) {
-                setError(req, resp, "Username already taken.");
+                setError(req, resp, "Tên đăng nhập đã được sử dụng.");
                 return;
             }
             if (userDAO.findByEmail(email) != null) {
-                setError(req, resp, "Email already registered.");
+                setError(req, resp, "Email đã được đăng ký.");
                 return;
             }
 
@@ -72,10 +72,10 @@ public class RegisterServlet extends HttpServlet {
                 memberDAO.insert(userId, fullName, gender, null, null, 0, null);
                 resp.sendRedirect(req.getContextPath() + "/login?registered=true");
             } else {
-                setError(req, resp, "Registration failed. Please try again.");
+                setError(req, resp, "Đăng ký thất bại. Vui lòng thử lại.");
             }
         } catch (Exception e) {
-            setError(req, resp, "A system error occurred. Please try again.");
+            setError(req, resp, "Đã xảy ra lỗi hệ thống. Vui lòng thử lại.");
         }
     }
 

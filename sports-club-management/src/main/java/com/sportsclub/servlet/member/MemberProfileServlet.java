@@ -30,7 +30,7 @@ public class MemberProfileServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/member/profile.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load profile.");
+            req.setAttribute("error", "Không thể tải hồ sơ.");
             req.getRequestDispatcher("/WEB-INF/views/member/profile.jsp").forward(req, resp);
         }
     }
@@ -59,7 +59,7 @@ public class MemberProfileServlet extends HttpServlet {
                 userDAO.updatePassword(loggedIn.getId(), hashed);
             }
 
-            req.getSession().setAttribute("flash", "Profile updated successfully.");
+            req.getSession().setAttribute("flash", "Cập nhật hồ sơ thành công.");
             resp.sendRedirect(req.getContextPath() + "/member/profile");
         } catch (Exception e) {
             resp.sendRedirect(req.getContextPath() + "/member/profile?error=1");

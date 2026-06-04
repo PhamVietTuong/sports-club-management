@@ -36,7 +36,7 @@ public class CoachClassServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/coach/classes.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load class information.");
+            req.setAttribute("error", "Không thể tải thông tin lớp học.");
             req.getRequestDispatcher("/WEB-INF/views/coach/classes.jsp").forward(req, resp);
         }
     }

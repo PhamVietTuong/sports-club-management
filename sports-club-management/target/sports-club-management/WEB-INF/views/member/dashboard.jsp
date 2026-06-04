@@ -1,11 +1,11 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Member Dashboard — Sports Club</title>
+    <title>Bảng điều khiển thành viên — Sports Club</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
@@ -16,9 +16,9 @@
         Sports Club
     </a>
     <div class="member-nav-links">
-        <a href="${pageContext.request.contextPath}/member/dashboard" class="active">Dashboard</a>
-        <a href="${pageContext.request.contextPath}/member/classes">Classes</a>
-        <a href="${pageContext.request.contextPath}/member/profile">My Profile</a>
+        <a href="${pageContext.request.contextPath}/member/dashboard" class="active">Trang chủ</a>
+        <a href="${pageContext.request.contextPath}/member/classes">Lớp học</a>
+        <a href="${pageContext.request.contextPath}/member/profile">Hồ sơ của tôi</a>
     </div>
     <div class="member-nav-actions">
         <span class="nav-username"><c:out value="${member.fullName}"/></span>
@@ -31,7 +31,7 @@
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
-                Logout
+                Đăng xuất
             </button>
         </form>
     </div>
@@ -45,39 +45,39 @@
     </c:if>
 
     <h2 class="fs-22 mb-4px">
-        Welcome back, <c:out value="${member.fullName}"/>!
+        Chào mừng trở lại, <c:out value="${member.fullName}"/>!
     </h2>
     <p class="text-muted fs-13 mb-4">
-        Here's your membership overview.
+        Đây là tổng quan về hội viên của bạn.
     </p>
 
     <div class="grid-2">
         <!-- Membership Status Card -->
         <div class="stat-card">
-            <div class="stat-label mb-2">Membership Status</div>
+            <div class="stat-label mb-2">Trạng thái hội viên</div>
             <div class="mb-8px">
                 <c:choose>
                     <c:when test="${member.status eq 'ACTIVE'}">
                         <span class="badge badge-success fs-13">
-                            <c:out value="${member.status}"/>
+                            HOẠT ĐỘNG
                         </span>
                     </c:when>
                     <c:when test="${member.status eq 'SUSPENDED'}">
                         <span class="badge badge-danger fs-13">
-                            <c:out value="${member.status}"/>
+                            TẠM KHÓA
                         </span>
                     </c:when>
                     <c:otherwise>
                         <span class="badge badge-warning fs-13">
-                            <c:out value="${member.status}"/>
+                            NGỪNG HOẠT ĐỘNG
                         </span>
                     </c:otherwise>
                 </c:choose>
             </div>
             <p class="fs-13 text-muted m-0">
-                Expires:
+                Hết hạn:
                 <strong class="text-default">
-                    <c:out value="${member.expiryDate != null ? member.expiryDate : 'N/A'}"/>
+                    <c:out value="${member.expiryDate != null ? member.expiryDate : 'Không có'}"/>
                 </strong>
             </p>
         </div>
@@ -94,31 +94,42 @@
                 </svg>
             </div>
             <div class="stat-number">${enrollments.size()}</div>
-            <div class="stat-label">Enrolled Classes</div>
+            <div class="stat-label">Lớp học đã đăng ký</div>
             <a href="${pageContext.request.contextPath}/member/classes"
                class="btn btn-primary btn-sm mt-12px">
-                Browse Classes
+                Xem các lớp học
             </a>
         </div>
     </div>
 
-    <div class="section-title mt-4">My Weekly Schedule</div>
+    <div class="section-title mt-4">Lịch tập hàng tuần của tôi</div>
     <div class="table-wrap">
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Class</th>
-                    <th>Day</th>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Room</th>
+                    <th>Lớp học</th>
+                    <th>Ngày</th>
+                    <th>Bắt đầu</th>
+                    <th>Kết thúc</th>
+                    <th>Phòng</th>
                 </tr>
             </thead>
             <tbody>
                 <c:forEach var="s" items="${schedules}">
                 <tr>
                     <td><c:out value="${s.className}"/></td>
-                    <td><c:out value="${s.dayOfWeek}"/></td>
+                    <td>
+                        <c:choose>
+                            <c:when test="${s.dayOfWeek eq 'MONDAY'}">Thứ Hai</c:when>
+                            <c:when test="${s.dayOfWeek eq 'TUESDAY'}">Thứ Ba</c:when>
+                            <c:when test="${s.dayOfWeek eq 'WEDNESDAY'}">Thứ Tư</c:when>
+                            <c:when test="${s.dayOfWeek eq 'THURSDAY'}">Thứ Năm</c:when>
+                            <c:when test="${s.dayOfWeek eq 'FRIDAY'}">Thứ Sáu</c:when>
+                            <c:when test="${s.dayOfWeek eq 'SATURDAY'}">Thứ Bảy</c:when>
+                            <c:when test="${s.dayOfWeek eq 'SUNDAY'}">Chủ Nhật</c:when>
+                            <c:otherwise><c:out value="${s.dayOfWeek}"/></c:otherwise>
+                        </c:choose>
+                    </td>
                     <td><c:out value="${s.startTime}"/></td>
                     <td><c:out value="${s.endTime}"/></td>
                     <td><c:out value="${s.room}"/></td>
@@ -126,7 +137,7 @@
                 </c:forEach>
                 <c:if test="${empty schedules}">
                     <tr>
-                        <td colspan="5" class="text-center text-muted empty-pad-32">No scheduled classes yet.</td>
+                        <td colspan="5" class="text-center text-muted empty-pad-32">Chưa có lớp học nào trong lịch.</td>
                     </tr>
                 </c:if>
             </tbody>

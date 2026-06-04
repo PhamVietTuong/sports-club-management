@@ -1,3 +1,4 @@
+<%@ page pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <aside class="sidebar">
     <div class="sidebar-logo">
@@ -13,7 +14,7 @@
                 <rect x="14" y="14" width="7" height="7" rx="1"/>
                 <rect x="3" y="14" width="7" height="7" rx="1"/>
             </svg>
-            Dashboard
+            Bảng điều khiển
         </a>
         <a href="${pageContext.request.contextPath}/admin/members"
            class="${activeNav eq 'members' ? 'active' : ''}">
@@ -23,14 +24,14 @@
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
-            Members
+            Thành viên
         </a>
         <a href="${pageContext.request.contextPath}/admin/coaches"
            class="${activeNav eq 'coaches' ? 'active' : ''}">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
             </svg>
-            Coaches
+            Huấn luyện viên
         </a>
         <a href="${pageContext.request.contextPath}/admin/classes"
            class="${activeNav eq 'classes' ? 'active' : ''}">
@@ -40,7 +41,7 @@
                 <line x1="8" y1="2" x2="8" y2="6"/>
                 <line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
-            Classes
+            Lớp học
         </a>
         <a href="${pageContext.request.contextPath}/admin/schedules"
            class="${activeNav eq 'schedules' ? 'active' : ''}">
@@ -48,7 +49,7 @@
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
             </svg>
-            Schedules
+            Lịch tập
         </a>
         <a href="${pageContext.request.contextPath}/admin/packages"
            class="${activeNav eq 'packages' ? 'active' : ''}">
@@ -58,7 +59,7 @@
                 <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                 <line x1="12" y1="22.08" x2="12" y2="12"/>
             </svg>
-            Packages
+            Gói tập
         </a>
     </nav>
     <div class="sidebar-footer">
@@ -70,7 +71,7 @@
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
-                Logout
+                Đăng xuất
             </button>
         </form>
     </div>

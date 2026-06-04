@@ -49,7 +49,7 @@ public class LoginServlet extends HttpServlet {
             // BRUTE-FORCE PROTECTION — reject if too many recent failures
             int failCount = userDAO.countRecentFailedAttempts(username);
             if (failCount >= MAX_ATTEMPTS) {
-                req.setAttribute("error", "Account temporarily locked. Please wait 15 minutes.");
+                req.setAttribute("error", "Tài khoản tạm thời bị khóa. Vui lòng đợi 15 phút.");
                 HttpSession s = req.getSession(true);
                 req.setAttribute("csrfToken", CsrfUtils.generateToken(s));
                 req.getRequestDispatcher("/WEB-INF/views/common/login.jsp").forward(req, resp);
@@ -90,14 +90,14 @@ public class LoginServlet extends HttpServlet {
             } else {
                 // Log failed attempt for brute-force tracking
                 userDAO.logLoginAttempt(username, clientIp, false);
-                req.setAttribute("error", "Invalid username or password.");
+                req.setAttribute("error", "Tên đăng nhập hoặc mật khẩu không đúng.");
                 HttpSession s = req.getSession(true);
                 req.setAttribute("csrfToken", CsrfUtils.generateToken(s));
                 req.getRequestDispatcher("/WEB-INF/views/common/login.jsp").forward(req, resp);
             }
         } catch (Exception e) {
             // Never expose system internals to the user
-            req.setAttribute("error", "A system error occurred. Please try again.");
+            req.setAttribute("error", "Đã xảy ra lỗi hệ thống. Vui lòng thử lại.");
             req.getRequestDispatcher("/WEB-INF/views/common/login.jsp").forward(req, resp);
         }
     }

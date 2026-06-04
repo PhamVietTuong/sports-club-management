@@ -1,11 +1,11 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard — Sports Club</title>
+    <title>Bảng điều khiển quản trị — Sports Club</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
@@ -14,7 +14,7 @@
     <%@ include file="navbar.jsp" %>
     <div class="main-content">
         <header class="top-bar">
-            <span class="top-bar-title">Dashboard</span>
+            <span class="top-bar-title">Bảng điều khiển</span>
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
@@ -40,8 +40,8 @@
                         </svg>
                     </div>
                     <div class="stat-number"><c:out value="${totalMembers}"/></div>
-                    <div class="stat-label">Total Members</div>
-                    <a href="${pageContext.request.contextPath}/admin/members" class="stat-link">Manage →</a>
+                    <div class="stat-label">Tổng số thành viên</div>
+                    <a href="${pageContext.request.contextPath}/admin/members" class="stat-link">Quản lý →</a>
                 </div>
 
                 <!-- Total Coaches -->
@@ -52,8 +52,8 @@
                         </svg>
                     </div>
                     <div class="stat-number"><c:out value="${totalCoaches}"/></div>
-                    <div class="stat-label">Total Coaches</div>
-                    <a href="${pageContext.request.contextPath}/admin/coaches" class="stat-link">Manage →</a>
+                    <div class="stat-label">Tổng số huấn luyện viên</div>
+                    <a href="${pageContext.request.contextPath}/admin/coaches" class="stat-link">Quản lý →</a>
                 </div>
 
                 <!-- Active Classes -->
@@ -67,14 +67,14 @@
                         </svg>
                     </div>
                     <div class="stat-number"><c:out value="${totalClasses}"/></div>
-                    <div class="stat-label">Active Classes</div>
-                    <a href="${pageContext.request.contextPath}/admin/classes" class="stat-link">Manage →</a>
+                    <div class="stat-label">Lớp học đang hoạt động</div>
+                    <a href="${pageContext.request.contextPath}/admin/classes" class="stat-link">Quản lý →</a>
                 </div>
             </div>
 
             <div class="grid-2 mt-4">
                 <div class="card">
-                    <div class="card-title">Quick Actions</div>
+                    <div class="card-title">Thao tác nhanh</div>
                     <div class="d-flex flex-column gap-2">
                         <a href="${pageContext.request.contextPath}/admin/schedules"
                            class="btn btn-ghost">
@@ -82,7 +82,7 @@
                                 <circle cx="12" cy="12" r="10"/>
                                 <polyline points="12 6 12 12 16 14"/>
                             </svg>
-                            Manage Schedules
+                            Quản lý lịch tập
                         </a>
                         <a href="${pageContext.request.contextPath}/admin/packages"
                            class="btn btn-ghost">
@@ -92,19 +92,19 @@
                                 <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                                 <line x1="12" y1="22.08" x2="12" y2="12"/>
                             </svg>
-                            Manage Packages
+                            Quản lý gói tập
                         </a>
                     </div>
                 </div>
 
                 <div class="card">
-                    <div class="card-title">Overview</div>
+                    <div class="card-title">Tổng quan</div>
                     <p class="fs-13 text-muted lh-18">
-                        Manage your sports club members, coaches, and training classes from this dashboard.
-                        Use the sidebar to navigate between sections.
+                        Quản lý thành viên, huấn luyện viên và các lớp tập luyện của câu lạc bộ từ bảng điều khiển này.
+                        Sử dụng thanh bên để di chuyển giữa các mục.
                     </p>
                     <p class="small text-muted mt-2">
-                        Logged in as <strong class="text-default">
+                        Đang đăng nhập với tên <strong class="text-default">
                             <c:out value="${sessionScope.loggedInUser.username}"/>
                         </strong>
                     </p>

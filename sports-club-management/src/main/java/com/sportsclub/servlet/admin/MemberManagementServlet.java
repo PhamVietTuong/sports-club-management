@@ -45,7 +45,7 @@ public class MemberManagementServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/admin/members.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load members.");
+            req.setAttribute("error", "Không thể tải danh sách thành viên.");
             req.getRequestDispatcher("/WEB-INF/views/admin/members.jsp").forward(req, resp);
         }
     }

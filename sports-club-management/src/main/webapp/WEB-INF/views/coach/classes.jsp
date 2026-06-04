@@ -1,11 +1,11 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Classes — Coach</title>
+    <title>Lớp học của tôi — Huấn luyện viên</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
@@ -25,7 +25,7 @@
                     <rect x="14" y="14" width="7" height="7" rx="1"/>
                     <rect x="3" y="14" width="7" height="7" rx="1"/>
                 </svg>
-                Dashboard
+                Bảng điều khiển
             </a>
             <a href="${pageContext.request.contextPath}/coach/classes" class="active">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -35,7 +35,7 @@
                     <line x1="8" y1="2" x2="8" y2="6"/>
                     <line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
-                My Classes
+                Lớp học của tôi
             </a>
         </nav>
         <div class="sidebar-footer">
@@ -43,7 +43,7 @@
                 <div class="sidebar-user-name">
                     <c:out value="${sessionScope.loggedInUser.username}"/>
                 </div>
-                Coach
+                Huấn luyện viên
             </div>
             <form method="post" action="${pageContext.request.contextPath}/logout">
                 <input type="hidden" name="_csrf" value="${csrfToken}">
@@ -54,7 +54,7 @@
                         <polyline points="16 17 21 12 16 7"/>
                         <line x1="21" y1="12" x2="9" y2="12"/>
                     </svg>
-                    Logout
+                    Đăng xuất
                 </button>
             </form>
         </div>
@@ -62,9 +62,9 @@
 
     <div class="main-content">
         <header class="top-bar">
-            <span class="top-bar-title">My Classes</span>
+            <span class="top-bar-title">Lớp học của tôi</span>
             <div class="top-bar-user">
-                <span><c:out value="${sessionScope.loggedInUser.username}"/> (Coach)</span>
+                <span><c:out value="${sessionScope.loggedInUser.username}"/> (Huấn luyện viên)</span>
                 <div class="user-avatar">
                     <c:out value="${not empty sessionScope.loggedInUser.username ? sessionScope.loggedInUser.username.substring(0,1).toUpperCase() : '?'}"/>
                 </div>
@@ -73,7 +73,7 @@
 
         <div class="page-body">
             <div class="page-header">
-                <div class="page-title">My Classes</div>
+                <div class="page-title">Lớp học của tôi</div>
             </div>
 
             <div class="grid-3">
@@ -98,13 +98,13 @@
                         <div class="mb-2">
                             <c:choose>
                                 <c:when test="${tc.level eq 'BEGINNER'}">
-                                    <span class="badge badge-success">BEGINNER</span>
+                                    <span class="badge badge-success">CƠ BẢN</span>
                                 </c:when>
                                 <c:when test="${tc.level eq 'INTERMEDIATE'}">
-                                    <span class="badge badge-warning">INTERMEDIATE</span>
+                                    <span class="badge badge-warning">TRUNG CẤP</span>
                                 </c:when>
                                 <c:when test="${tc.level eq 'ADVANCED'}">
-                                    <span class="badge badge-danger">ADVANCED</span>
+                                    <span class="badge badge-danger">NÂNG CAO</span>
                                 </c:when>
                                 <c:otherwise>
                                     <span class="badge badge-muted"><c:out value="${tc.level}"/></span>
@@ -112,7 +112,7 @@
                             </c:choose>
                         </div>
                         <p class="fs-13 text-muted mb-8px">
-                            Enrolled:
+                            Đã đăng ký:
                             <strong class="text-default">
                                 <c:out value="${tc.currentEnrolled}"/>
                             </strong>
@@ -124,28 +124,28 @@
                         </div>
                     </div>
                     <div class="class-card-footer">
-                        <a href="?classId=${tc.id}" class="btn btn-ghost btn-sm w-100">View Members</a>
+                        <a href="?classId=${tc.id}" class="btn btn-ghost btn-sm w-100">Xem thành viên</a>
                     </div>
                 </div>
                 </c:forEach>
                 <c:if test="${empty myClasses}">
                     <p class="text-muted col-span-full pad-24-0">
-                        No classes assigned yet.
+                        Chưa có lớp học nào được phân công.
                     </p>
                 </c:if>
             </div>
 
             <c:if test="${not empty selectedClass}">
                 <div class="section-title mt-4">
-                    Enrolled Members &mdash; <c:out value="${selectedClass.name}"/>
+                    Thành viên đã đăng ký &mdash; <c:out value="${selectedClass.name}"/>
                 </div>
                 <div class="table-wrap">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Member</th>
-                                <th>Enroll Date</th>
-                                <th>Status</th>
+                                <th>Thành viên</th>
+                                <th>Ngày đăng ký</th>
+                                <th>Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -157,12 +157,12 @@
                                     <c:choose>
                                         <c:when test="${e.status eq 'ACTIVE'}">
                                             <span class="badge badge-success">
-                                                <c:out value="${e.status}"/>
+                                                HOẠT ĐỘNG
                                             </span>
                                         </c:when>
                                         <c:when test="${e.status eq 'CANCELLED'}">
                                             <span class="badge badge-danger">
-                                                <c:out value="${e.status}"/>
+                                                ĐÃ HỦY
                                             </span>
                                         </c:when>
                                         <c:otherwise>
@@ -176,7 +176,7 @@
                             </c:forEach>
                             <c:if test="${empty enrolledMembers}">
                                 <tr>
-                                    <td colspan="3" class="text-center text-muted empty-pad-32">No members enrolled.</td>
+                                    <td colspan="3" class="text-center text-muted empty-pad-32">Chưa có thành viên đăng ký.</td>
                                 </tr>
                             </c:if>
                         </tbody>

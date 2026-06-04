@@ -24,7 +24,7 @@ public class AdminDashboardServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load dashboard data.");
+            req.setAttribute("error", "Không thể tải dữ liệu bảng điều khiển.");
             req.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(req, resp);
         }
     }

@@ -41,7 +41,7 @@ public class ScheduleManagementServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/admin/schedules.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load schedules.");
+            req.setAttribute("error", "Không thể tải lịch tập.");
             req.getRequestDispatcher("/WEB-INF/views/admin/schedules.jsp").forward(req, resp);
         }
     }

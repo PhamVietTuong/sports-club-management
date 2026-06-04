@@ -1,11 +1,11 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browse Classes — Sports Club</title>
+    <title>Xem lớp học — Sports Club</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
@@ -16,9 +16,9 @@
         Sports Club
     </a>
     <div class="member-nav-links">
-        <a href="${pageContext.request.contextPath}/member/dashboard">Dashboard</a>
-        <a href="${pageContext.request.contextPath}/member/classes" class="active">Classes</a>
-        <a href="${pageContext.request.contextPath}/member/profile">My Profile</a>
+        <a href="${pageContext.request.contextPath}/member/dashboard">Trang chủ</a>
+        <a href="${pageContext.request.contextPath}/member/classes" class="active">Lớp học</a>
+        <a href="${pageContext.request.contextPath}/member/profile">Hồ sơ của tôi</a>
     </div>
     <div class="member-nav-actions">
         <form method="post" action="${pageContext.request.contextPath}/logout" class="d-inline">
@@ -30,7 +30,7 @@
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
-                Logout
+                Đăng xuất
             </button>
         </form>
     </div>
@@ -45,8 +45,8 @@
 
     <div class="page-header">
         <div>
-            <div class="page-title">Browse Classes</div>
-            <div class="page-subtitle">Find and enroll in your next session</div>
+            <div class="page-title">Xem lớp học</div>
+            <div class="page-subtitle">Tìm và đăng ký buổi tập tiếp theo của bạn</div>
         </div>
     </div>
 
@@ -72,20 +72,20 @@
                 <div class="mb-1">
                     <c:choose>
                         <c:when test="${tc.level eq 'BEGINNER'}">
-                            <span class="badge badge-success">BEGINNER</span>
+                            <span class="badge badge-success">CƠ BẢN</span>
                         </c:when>
                         <c:when test="${tc.level eq 'INTERMEDIATE'}">
-                            <span class="badge badge-warning">INTERMEDIATE</span>
+                            <span class="badge badge-warning">TRUNG CẤP</span>
                         </c:when>
                         <c:when test="${tc.level eq 'ADVANCED'}">
-                            <span class="badge badge-danger">ADVANCED</span>
+                            <span class="badge badge-danger">NÂNG CAO</span>
                         </c:when>
                         <c:otherwise>
                             <span class="badge badge-muted"><c:out value="${tc.level}"/></span>
                         </c:otherwise>
                     </c:choose>
                 </div>
-                <p class="by-coach">by <c:out value="${tc.coachName}"/></p>
+                <p class="by-coach">bởi <c:out value="${tc.coachName}"/></p>
                 <p class="description"><c:out value="${tc.description}"/></p>
                 <div class="progress-bar-wrap">
                     <div class="progress-bar-fill ${(tc.capacity - tc.availableSlots) >= tc.capacity ? 'full' : (tc.capacity - tc.availableSlots) < tc.capacity * 0.5 ? 'low' : ''}"
@@ -93,7 +93,7 @@
                 </div>
                 <p class="capacity-text">
                     <span class="text-default fw-600">${tc.capacity - tc.availableSlots}</span>
-                    / <c:out value="${tc.capacity}"/> slots filled
+                    / <c:out value="${tc.capacity}"/> chỗ đã đầy
                 </p>
             </div>
             <div class="class-card-footer">
@@ -103,11 +103,11 @@
                             <input type="hidden" name="_csrf"   value="${csrfToken}">
                             <input type="hidden" name="action"  value="enroll">
                             <input type="hidden" name="classId" value="${tc.id}">
-                            <button type="submit" class="btn btn-primary w-100">Enroll</button>
+                            <button type="submit" class="btn btn-primary w-100">Đăng ký</button>
                         </form>
                     </c:when>
                     <c:otherwise>
-                        <button class="btn btn-ghost w-100" disabled>Class Full</button>
+                        <button class="btn btn-ghost w-100" disabled>Lớp đã đầy</button>
                     </c:otherwise>
                 </c:choose>
             </div>
@@ -115,7 +115,7 @@
         </c:forEach>
         <c:if test="${empty classes}">
             <p class="text-muted col-span-full pad-24-0">
-                No classes available at this time.
+                Hiện tại không có lớp học nào.
             </p>
         </c:if>
     </div>

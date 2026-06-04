@@ -1,11 +1,11 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile — Sports Club</title>
+    <title>Hồ sơ của tôi — Sports Club</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
@@ -16,9 +16,9 @@
         Sports Club
     </a>
     <div class="member-nav-links">
-        <a href="${pageContext.request.contextPath}/member/dashboard">Dashboard</a>
-        <a href="${pageContext.request.contextPath}/member/classes">Classes</a>
-        <a href="${pageContext.request.contextPath}/member/profile" class="active">My Profile</a>
+        <a href="${pageContext.request.contextPath}/member/dashboard">Trang chủ</a>
+        <a href="${pageContext.request.contextPath}/member/classes">Lớp học</a>
+        <a href="${pageContext.request.contextPath}/member/profile" class="active">Hồ sơ của tôi</a>
     </div>
     <div class="member-nav-actions">
         <form method="post" action="${pageContext.request.contextPath}/logout" class="d-inline">
@@ -30,7 +30,7 @@
                     <polyline points="16 17 21 12 16 7"/>
                     <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
-                Logout
+                Đăng xuất
             </button>
         </form>
     </div>
@@ -44,7 +44,7 @@
     </c:if>
 
     <div class="page-header mb-20px">
-        <div class="page-title">My Profile</div>
+        <div class="page-title">Hồ sơ của tôi</div>
     </div>
 
     <div class="grid-2">
@@ -57,37 +57,37 @@
                 <c:out value="${member.fullName}"/>
             </h4>
             <p class="text-center mb-14px">
-                <span class="badge badge-primary">MEMBER</span>
+                <span class="badge badge-primary">THÀNH VIÊN</span>
             </p>
 
             <hr class="divider my-14px">
 
             <div class="info-row">
-                <span class="info-row-label">Status</span>
+                <span class="info-row-label">Trạng thái</span>
                 <span class="info-row-value">
                     <c:choose>
                         <c:when test="${member.status eq 'ACTIVE'}">
-                            <span class="badge badge-success"><c:out value="${member.status}"/></span>
+                            <span class="badge badge-success">HOẠT ĐỘNG</span>
                         </c:when>
                         <c:when test="${member.status eq 'SUSPENDED'}">
-                            <span class="badge badge-danger"><c:out value="${member.status}"/></span>
+                            <span class="badge badge-danger">TẠM KHÓA</span>
                         </c:when>
                         <c:otherwise>
-                            <span class="badge badge-warning"><c:out value="${member.status}"/></span>
+                            <span class="badge badge-warning">NGỪNG HOẠT ĐỘNG</span>
                         </c:otherwise>
                     </c:choose>
                 </span>
             </div>
             <div class="info-row">
-                <span class="info-row-label">Join Date</span>
+                <span class="info-row-label">Ngày tham gia</span>
                 <span class="info-row-value"><c:out value="${member.joinDate}"/></span>
             </div>
             <div class="info-row">
-                <span class="info-row-label">Expiry</span>
+                <span class="info-row-label">Ngày hết hạn</span>
                 <span class="info-row-value"><c:out value="${member.expiryDate}"/></span>
             </div>
             <div class="info-row">
-                <span class="info-row-label">Gender</span>
+                <span class="info-row-label">Giới tính</span>
                 <span class="info-row-value"><c:out value="${member.gender}"/></span>
             </div>
             <div class="info-row">
@@ -98,46 +98,46 @@
 
         <!-- Right: Edit Form -->
         <div class="card">
-            <div class="section-header">Personal Information</div>
+            <div class="section-header">Thông tin cá nhân</div>
 
             <form method="post" action="${pageContext.request.contextPath}/member/profile">
                 <input type="hidden" name="_csrf" value="${csrfToken}">
 
                 <div class="form-grid-2">
                     <div class="form-group">
-                        <label class="form-label">Full Name</label>
+                        <label class="form-label">Họ và tên</label>
                         <input type="text" name="fullName" class="form-control"
                                value="<c:out value='${member.fullName}'/>" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Phone</label>
+                        <label class="form-label">Số điện thoại</label>
                         <input type="text" name="phone" class="form-control"
                                value="<c:out value='${member.phone}'/>">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Address</label>
+                    <label class="form-label">Địa chỉ</label>
                     <input type="text" name="address" class="form-control"
                            value="<c:out value='${member.address}'/>"
-                           placeholder="Your address">
+                           placeholder="Địa chỉ của bạn">
                 </div>
 
                 <hr class="divider">
 
-                <p class="fw-bold fs-13 mb-4px">Change Password</p>
+                <p class="fw-bold fs-13 mb-4px">Đổi mật khẩu</p>
                 <p class="text-muted small mb-12px">
-                    Leave blank to keep current password
+                    Để trống nếu muốn giữ mật khẩu hiện tại
                 </p>
 
                 <div class="form-group">
-                    <label class="form-label">New Password</label>
+                    <label class="form-label">Mật khẩu mới</label>
                     <input type="password" name="newPassword" class="form-control"
-                           minlength="8" placeholder="Minimum 8 characters">
+                           minlength="8" placeholder="Tối thiểu 8 ký tự">
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 mt-8px">
-                    Save Changes
+                    Lưu thay đổi
                 </button>
             </form>
         </div>

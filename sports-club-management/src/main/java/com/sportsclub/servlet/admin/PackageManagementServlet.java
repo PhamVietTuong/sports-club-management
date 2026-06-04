@@ -21,7 +21,7 @@ public class PackageManagementServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/admin/packages.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load packages.");
+            req.setAttribute("error", "Không thể tải danh sách gói tập.");
             req.getRequestDispatcher("/WEB-INF/views/admin/packages.jsp").forward(req, resp);
         }
     }

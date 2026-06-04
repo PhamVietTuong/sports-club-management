@@ -1,11 +1,11 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Packages — Admin</title>
+    <title>Gói tập — Quản trị</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
     <div class="main-content">
 
         <header class="top-bar">
-            <span class="top-bar-title">Packages</span>
+            <span class="top-bar-title">Gói tập</span>
             <div class="top-bar-user">
                 <span><c:out value="${sessionScope.loggedInUser.username}"/> (Admin)</span>
                 <div class="user-avatar">
@@ -28,14 +28,14 @@
 
             <div class="page-header">
                 <div>
-                    <div class="page-title">Training Packages</div>
-                    <div class="page-subtitle">Manage membership plans and pricing</div>
+                    <div class="page-title">Gói tập luyện</div>
+                    <div class="page-subtitle">Quản lý các gói hội viên và giá</div>
                 </div>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPackageModal">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
-                    Add Package
+                    Thêm gói tập
                 </button>
             </div>
 
@@ -50,10 +50,10 @@
                             </h5>
                             <c:choose>
                                 <c:when test="${pkg.active}">
-                                    <span class="badge badge-success">Active</span>
+                                    <span class="badge badge-success">Hoạt động</span>
                                 </c:when>
                                 <c:otherwise>
-                                    <span class="badge badge-muted">Inactive</span>
+                                    <span class="badge badge-muted">Ngừng hoạt động</span>
                                 </c:otherwise>
                             </c:choose>
                         </div>
@@ -62,17 +62,17 @@
                         </p>
 
                         <div class="pkg-price">$<c:out value="${pkg.price}"/></div>
-                        <p class="pkg-price-sub">per <c:out value="${pkg.durationMonths}"/> month(s)</p>
+                        <p class="pkg-price-sub">cho <c:out value="${pkg.durationMonths}"/> tháng</p>
 
                         <div class="pkg-stat-row">
-                            <span class="pkg-stat-label">Duration</span>
-                            <span class="pkg-stat-value"><c:out value="${pkg.durationMonths}"/> month(s)</span>
+                            <span class="pkg-stat-label">Thời hạn</span>
+                            <span class="pkg-stat-value"><c:out value="${pkg.durationMonths}"/> tháng</span>
                         </div>
                         <div class="pkg-stat-row">
-                            <span class="pkg-stat-label">Max Classes</span>
+                            <span class="pkg-stat-label">Số lớp tối đa</span>
                             <span class="pkg-stat-value">
                                 <c:choose>
-                                    <c:when test="${pkg.maxClasses >= 99}">Unlimited</c:when>
+                                    <c:when test="${pkg.maxClasses >= 99}">Không giới hạn</c:when>
                                     <c:otherwise><c:out value="${pkg.maxClasses}"/></c:otherwise>
                                 </c:choose>
                             </span>
@@ -84,12 +84,12 @@
                             <input type="hidden" name="_csrf"      value="${csrfToken}">
                             <input type="hidden" name="action"     value="clone">
                             <input type="hidden" name="templateId" value="${pkg.id}">
-                            <button type="submit" class="btn btn-ghost btn-sm w-100" title="Clone at 120% price (Prototype)">
+                            <button type="submit" class="btn btn-ghost btn-sm w-100" title="Nhân bản với giá 120% (Prototype)">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                     <rect x="9" y="9" width="13" height="13" rx="2"/>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                                 </svg>
-                                Clone (×1.2)
+                                Nhân bản (×1.2)
                             </button>
                         </form>
                     </div>
@@ -97,7 +97,7 @@
                 </c:forEach>
                 <c:if test="${empty packages}">
                     <p class="text-muted col-span-full pad-24-0">
-                        No packages found. Add one to get started.
+                        Không tìm thấy gói tập nào. Thêm mới để bắt đầu.
                     </p>
                 </c:if>
             </div>
@@ -111,7 +111,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add Training Package</h5>
+                <h5 class="modal-title">Thêm gói tập luyện</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="${pageContext.request.contextPath}/admin/packages">
@@ -119,34 +119,34 @@
                 <input type="hidden" name="action" value="add">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label">Package Name <span class="req">*</span></label>
+                        <label class="form-label">Tên gói <span class="req">*</span></label>
                         <input type="text" name="name" class="form-control" required maxlength="100"
-                               placeholder="e.g. Premium, Standard, Basic">
+                               placeholder="vd: Premium, Tiêu chuẩn, Cơ bản">
                     </div>
                     <div class="form-grid-2">
                         <div class="form-group">
-                            <label class="form-label">Duration (months) <span class="req">*</span></label>
+                            <label class="form-label">Thời hạn (tháng) <span class="req">*</span></label>
                             <input type="number" name="durationMonths" class="form-control" min="1" value="1">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Price ($) <span class="req">*</span></label>
+                            <label class="form-label">Giá ($) <span class="req">*</span></label>
                             <input type="number" name="price" class="form-control" step="0.01" min="0" placeholder="0.00">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Max Classes</label>
+                            <label class="form-label">Số lớp tối đa</label>
                             <input type="number" name="maxClasses" class="form-control" min="0" value="0">
-                            <p class="form-hint">Use 99 for unlimited access.</p>
+                            <p class="form-hint">Dùng 99 để truy cập không giới hạn.</p>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Description</label>
+                        <label class="form-label">Mô tả</label>
                         <textarea name="description" class="form-control" rows="3"
-                                  placeholder="Briefly describe what's included..."></textarea>
+                                  placeholder="Mô tả ngắn gọn những gì bao gồm..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Package</button>
+                    <button type="button" class="btn btn-ghost" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Lưu gói tập</button>
                 </div>
             </form>
         </div>

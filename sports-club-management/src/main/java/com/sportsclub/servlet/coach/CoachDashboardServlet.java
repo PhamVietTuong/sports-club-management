@@ -46,7 +46,7 @@ public class CoachDashboardServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/coach/dashboard.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load dashboard.");
+            req.setAttribute("error", "Không thể tải bảng điều khiển.");
             req.getRequestDispatcher("/WEB-INF/views/coach/dashboard.jsp").forward(req, resp);
         }
     }

@@ -24,7 +24,7 @@ public class CoachManagementServlet extends HttpServlet {
             req.setAttribute("csrfToken", CsrfUtils.generateToken(req.getSession()));
             req.getRequestDispatcher("/WEB-INF/views/admin/coaches.jsp").forward(req, resp);
         } catch (Exception e) {
-            req.setAttribute("error", "Could not load coaches.");
+            req.setAttribute("error", "Không thể tải danh sách huấn luyện viên.");
             req.getRequestDispatcher("/WEB-INF/views/admin/coaches.jsp").forward(req, resp);
         }
     }
