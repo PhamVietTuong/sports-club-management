@@ -18,7 +18,8 @@ public class ClassDAO {
         List<TrainingClass> list = new ArrayList<>();
         String sql = "SELECT tc.*, c.full_name AS coach_name FROM training_classes tc " +
                      "LEFT JOIN coaches c ON tc.coach_id = c.id ORDER BY tc.id";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         }
@@ -29,7 +30,8 @@ public class ClassDAO {
         List<TrainingClass> list = new ArrayList<>();
         String sql = "SELECT tc.*, c.full_name AS coach_name FROM training_classes tc " +
                      "LEFT JOIN coaches c ON tc.coach_id = c.id WHERE tc.is_active = 1";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         }
@@ -40,7 +42,8 @@ public class ClassDAO {
         List<TrainingClass> list = new ArrayList<>();
         String sql = "SELECT tc.*, c.full_name AS coach_name FROM training_classes tc " +
                      "LEFT JOIN coaches c ON tc.coach_id = c.id WHERE tc.coach_id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, coachId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
@@ -52,7 +55,8 @@ public class ClassDAO {
     public TrainingClass findById(int id) throws SQLException {
         String sql = "SELECT tc.*, c.full_name AS coach_name FROM training_classes tc " +
                      "LEFT JOIN coaches c ON tc.coach_id = c.id WHERE tc.id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -64,7 +68,8 @@ public class ClassDAO {
     public int insert(TrainingClass tc) throws SQLException {
         String sql = "INSERT INTO training_classes (name, coach_id, capacity, level, description, is_active) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = getConn().prepareStatement(
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, tc.getName());
             ps.setInt(2, tc.getCoachId());
@@ -83,7 +88,8 @@ public class ClassDAO {
     public void update(TrainingClass tc) throws SQLException {
         String sql = "UPDATE training_classes SET name=?, coach_id=?, capacity=?, " +
                      "level=?, description=?, is_active=? WHERE id=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, tc.getName());
             ps.setInt(2, tc.getCoachId());
             ps.setInt(3, tc.getCapacity());
@@ -97,7 +103,8 @@ public class ClassDAO {
 
     public void incrementEnrolled(int classId) throws SQLException {
         String sql = "UPDATE training_classes SET current_enrolled = current_enrolled + 1 WHERE id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, classId);
             ps.executeUpdate();
         }
@@ -105,7 +112,8 @@ public class ClassDAO {
 
     public void decrementEnrolled(int classId) throws SQLException {
         String sql = "UPDATE training_classes SET current_enrolled = current_enrolled - 1 WHERE id = ? AND current_enrolled > 0";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, classId);
             ps.executeUpdate();
         }
@@ -113,7 +121,8 @@ public class ClassDAO {
 
     public int countAll() throws SQLException {
         String sql = "SELECT COUNT(*) FROM training_classes WHERE is_active = 1";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) return rs.getInt(1);
         }

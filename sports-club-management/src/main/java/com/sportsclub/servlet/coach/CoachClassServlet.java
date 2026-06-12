@@ -28,8 +28,18 @@ public class CoachClassServlet extends HttpServlet {
             String classIdParam = req.getParameter("classId");
             if (classIdParam != null) {
                 int classId = Integer.parseInt(classIdParam);
-                req.setAttribute("enrolledMembers", enrollmentDAO.findByClassId(classId));
-                req.setAttribute("selectedClass", classDAO.findById(classId));
+                com.sportsclub.model.TrainingClass selected = classDAO.findById(classId);
+
+                // BROKEN ACCESS CONTROL / IDOR PREVENTION —
+                // only expose the class (and its enrolled members) if it
+                // actually belongs to the logged-in coach. Otherwise a coach
+                // could read other coaches' classes by guessing classId.
+                if (selected == null || selected.getCoachId() != coach.getId()) {
+                    req.setAttribute("error", "Bạn không có quyền xem lớp học này.");
+                } else {
+                    req.setAttribute("selectedClass", selected);
+                    req.setAttribute("enrolledMembers", enrollmentDAO.findByClassId(classId));
+                }
             }
 
             req.setAttribute("myClasses", classDAO.findByCoachId(coach.getId()));

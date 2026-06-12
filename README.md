@@ -1,4 +1,4 @@
-# Sports Club Management System — User Manual
+# Sports Club Management System ï¿½ User Manual
 
 **Version:** 1.0  
 **Platform:** Java Servlet + JSP + SQL Server (Tomcat 10)  
@@ -30,7 +30,7 @@ The Sports Club Management System is a role-based web application for managing a
 
 | Role | Access Prefix | Responsibilities |
 |------|--------------|-----------------|
-| **ADMIN** | `/admin/*` | Full system control — users, classes, schedules, packages |
+| **ADMIN** | `/admin/*` | Full system control ï¿½ users, classes, schedules, packages |
 | **COACH** | `/coach/*` | View assigned classes and training schedules |
 | **MEMBER** | `/member/*` | Enroll in classes, view schedule, manage profile |
 
@@ -43,7 +43,7 @@ The Sports Club Management System is a role-based web application for managing a
 | Software | Minimum Version |
 |----------|----------------|
 | Java JDK | 11 or higher |
-| Apache Tomcat | 10.x (Jakarta EE — **not** Tomcat 9) |
+| Apache Tomcat | 10.x (Jakarta EE ï¿½ **not** Tomcat 9) |
 | SQL Server | 2019 or higher |
 | Maven | 3.6+ |
 
@@ -64,18 +64,25 @@ sports-club-management/target/sports-club-management.war
 
 ## 3. Database Setup
 
-### Step 1 — Configure Connection
+### Step 1 ï¿½ Configure Connection
 
-Edit `src/main/java/com/sportsclub/util/DatabaseConnection.java` and update the credentials before building:
+The database connection is a **HikariCP connection pool** in
+`src/main/java/com/sportsclub/util/DatabaseConnection.java`. Credentials are read from
+**environment variables** (with local-dev fallbacks), so no secrets are hardcoded:
 
-```
-Host:     localhost:1433
-Database: SportsClubDB
-User:     sa
-Password: YourPassword123
-```
+| Variable | Default (local dev) | Notes |
+|----------|---------------------|-------|
+| `DB_HOST` | `localhost` | SQL Server host |
+| `DB_PORT` | `1433` | SQL Server port |
+| `DB_NAME` | `SportsClubDB` | Database name |
+| `DB_USER` | `sa` | Database user |
+| `DB_PASSWORD` | `P@ssw0rd` | Database password |
+| `DB_TRUST_CERT` | `true` | **Set `false` in production** so the SQL Server TLS certificate is validated |
 
-### Step 2 — Run the Schema Script
+For production, set these environment variables before starting Tomcat ï¿½ never rely on the
+fallback values. Each DAO borrows a pooled connection per call and returns it automatically.
+
+### Step 2 ï¿½ Run the Schema Script
 
 Open SQL Server Management Studio (or `sqlcmd`) and run:
 
@@ -122,7 +129,7 @@ This creates the `SportsClubDB` database with all tables, stored procedures, vie
 
 ## 5. Logging In
 
-### Login Page — `/login`
+### Login Page ï¿½ `/login`
 
 1. Enter your **Username** and **Password**.
 2. Click **Login**.
@@ -167,7 +174,7 @@ The dashboard provides a summary overview:
 
 ---
 
-### 6.2 Member Management — `/admin/members`
+### 6.2 Member Management ï¿½ `/admin/members`
 
 **View Members**
 
@@ -177,7 +184,7 @@ The members list shows: full name, username, email, gender, join date, expiry da
 
 1. Click **Add Member**.
 2. Fill in the form:
-   - Username, Email, Password (min 8 characters)
+   - Username, Email, Password (â‰¥ 8 characters, must include letters and numbers)
    - Full Name, Gender, Date of Birth, Address
    - Package (optional) and Expiry Date
 3. Click **Save**.
@@ -199,7 +206,7 @@ Use the status filter dropdown to view ACTIVE, INACTIVE, or SUSPENDED members.
 
 ---
 
-### 6.3 Coach Management — `/admin/coaches`
+### 6.3 Coach Management ï¿½ `/admin/coaches`
 
 **View Coaches**
 
@@ -215,11 +222,11 @@ The list shows: full name, email, specialization, years of experience, and salar
 
 **Edit / Delete a Coach**
 
-Same procedure as member management — click **Edit** or **Delete** next to the coach row.
+Same procedure as member management ï¿½ click **Edit** or **Delete** next to the coach row.
 
 ---
 
-### 6.4 Class Management — `/admin/classes`
+### 6.4 Class Management ï¿½ `/admin/classes`
 
 **View Classes**
 
@@ -237,7 +244,7 @@ The list shows: class name, assigned coach, capacity, current enrollment, level,
 **Duplicate a Class (Prototype Pattern)**
 
 1. Click **Clone** next to an existing class.
-2. A copy is created with the same settings — edit the name and coach before saving.
+2. A copy is created with the same settings ï¿½ edit the name and coach before saving.
 
 **Activate / Deactivate a Class**
 
@@ -245,7 +252,7 @@ Toggle the **Active** checkbox in the edit form. Inactive classes do not appear 
 
 ---
 
-### 6.5 Schedule Management — `/admin/schedules`
+### 6.5 Schedule Management ï¿½ `/admin/schedules`
 
 **View Schedules**
 
@@ -256,7 +263,7 @@ Each schedule entry shows: class name, day of week, start/end time, and room.
 1. Click **Add Schedule**.
 2. Choose:
    - Class (dropdown)
-   - Day of Week (MONDAY – SUNDAY)
+   - Day of Week (MONDAY ï¿½ SUNDAY)
    - Start Time and End Time (HH:MM)
    - Room (e.g., Studio A, Gym Floor)
 3. Check **Repeat Weekly** to make it a recurring session.
@@ -272,7 +279,7 @@ Click **Edit** or **Delete** next to a schedule row.
 
 ---
 
-### 6.6 Package Management — `/admin/packages`
+### 6.6 Package Management ï¿½ `/admin/packages`
 
 **View Packages**
 
@@ -301,14 +308,14 @@ Uncheck **Active** in the edit form. Inactive packages are hidden from member vi
 
 ## 7. Coach Guide
 
-### 7.1 Dashboard — `/coach/dashboard`
+### 7.1 Dashboard ï¿½ `/coach/dashboard`
 
 The coach dashboard shows:
 
 - Number of active classes assigned to this coach
 - Upcoming schedule for the week
 
-### 7.2 My Classes — `/coach/classes`
+### 7.2 My Classes ï¿½ `/coach/classes`
 
 Displays all training classes assigned to the logged-in coach, including:
 
@@ -322,7 +329,7 @@ Coaches have **read-only** access to class and schedule information. To make cha
 
 ## 8. Member Guide
 
-### 8.1 Dashboard — `/member/dashboard`
+### 8.1 Dashboard ï¿½ `/member/dashboard`
 
 The member dashboard shows:
 
@@ -330,7 +337,7 @@ The member dashboard shows:
 - Membership status (ACTIVE / INACTIVE / SUSPENDED)
 - List of currently enrolled classes
 
-### 8.2 Browse & Enroll in Classes — `/member/classes`
+### 8.2 Browse & Enroll in Classes ï¿½ `/member/classes`
 
 **Browse Classes**
 
@@ -354,21 +361,25 @@ The class list shows all active classes:
 
 > **Note:** You cannot enroll in the same class twice. Duplicate enrollment is blocked automatically.
 
-### 8.3 My Profile — `/member/profile`
+### 8.3 My Profile ï¿½ `/member/profile`
 
 View and update your personal details:
 
 - Full Name, Gender, Date of Birth, Address
 - Phone Number
-- Email (read-only — contact admin to change)
+- Email (read-only ï¿½ contact admin to change)
 
 Click **Update Profile** to save changes.
+
+**Changing your password:** to set a new password you must enter your **current password**
+first, and the new password must meet the strength policy (â‰¥ 8 characters, including letters
+and numbers). Leave the password fields blank to keep your existing password.
 
 ---
 
 ## 9. Account Registration
 
-### Self-Registration — `/register`
+### Self-Registration ï¿½ `/register`
 
 New members can create their own account:
 
@@ -376,10 +387,14 @@ New members can create their own account:
 2. Fill in:
    - Username (unique, no spaces)
    - Email (unique)
-   - Password (minimum 8 characters)
+   - Password (â‰¥ 8 characters, must include letters and numbers)
    - Full Name, Gender, Date of Birth, Address, Phone
 3. Click **Register**.
 4. On success you are redirected to the login page.
+
+> If the username or email is already taken, registration returns a single generic message
+> ("TÃªn Ä‘Äƒng nháº­p hoáº·c email Ä‘Ã£ Ä‘Æ°á»£c sá»­ dá»¥ng") rather than revealing which one ï¿½ this prevents
+> attackers from probing for valid accounts.
 
 > Registered users are assigned the **MEMBER** role by default. Admin and Coach accounts must be created by an existing admin.
 
@@ -387,18 +402,25 @@ New members can create their own account:
 
 ## 10. Security Features
 
-The following security controls are enforced automatically — no user action required.
+The following security controls are enforced automatically ï¿½ no user action required.
 
 | Feature | Behavior |
 |---------|----------|
-| **Password hashing** | All passwords stored as BCrypt (cost 12) — never in plain text |
+| **Password hashing** | All passwords stored as BCrypt (cost 12) ï¿½ never in plain text |
 | **CSRF protection** | Every form includes a hidden token; mismatched tokens are rejected with HTTP 403 |
-| **XSS prevention** | All output in JSP views is escaped — malicious scripts cannot be injected |
+| **XSS prevention** | All output in JSP views is escaped ï¿½ malicious scripts cannot be injected |
 | **Brute-force lockout** | After 5 failed login attempts within 15 minutes, the account is locked |
 | **Session fixation protection** | A new session ID is issued on every successful login |
 | **Role-based access control** | Attempting to access `/admin/*` as a MEMBER returns HTTP 403 |
-| **Security headers** | `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection` added to every response |
-| **Secure logout** | Full session invalidation — no residual session data |
+| **Object-level access control** | A coach can only view classes they own; requesting another coach's `classId` is denied (IDOR prevention) |
+| **Security headers** | `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Content-Security-Policy`, `Strict-Transport-Security` added to every response |
+| **Secure logout** | Full session invalidation ï¿½ no residual session data |
+| **Password strength policy** | New passwords must be â‰¥ 8 characters and contain both letters and numbers |
+| **Password-change re-authentication** | Changing a password requires re-entering the current password |
+| **SameSite cookies** | Session cookie is sent with `SameSite=Strict`, blocking cross-site delivery (extra CSRF defense) |
+| **Constant-time CSRF check** | CSRF tokens are compared in constant time to avoid timing side channels |
+| **Account-enumeration prevention** | Registration returns a single generic error instead of revealing whether the username or email exists |
+| **No hardcoded secrets** | DB credentials come from environment variables; connections use a HikariCP pool, not a shared connection |
 
 ---
 
@@ -413,7 +435,7 @@ The following security controls are enforced automatically — no user action requ
 ### "Could not connect to database"
 
 - Confirm SQL Server is running on `localhost:1433`.
-- Verify credentials in `DatabaseConnection.java` match your SQL Server setup.
+- Verify the `DB_*` environment variables (or the local-dev fallbacks) match your SQL Server setup.
 - Ensure the `SportsClubDB` database was created by running `database.sql`.
 
 ### "Account locked. Try again later."

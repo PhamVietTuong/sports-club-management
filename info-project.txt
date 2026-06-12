@@ -7,32 +7,55 @@ applying both Object-Oriented Software Design and Web Security principles.
 - Backend     : Java Servlet / JSP (no Spring framework)
 - Database    : Microsoft SQL Server 2019+
 - JDBC Driver : com.microsoft.sqlserver:mssql-jdbc:12.4.2.jre11
+- Conn. Pool  : com.zaxxer:HikariCP:5.1.0 (thread-safe pooled DB connections)
 - Build Tool  : Maven
 - Server      : Apache Tomcat 10
 - Frontend    : HTML + CSS + Bootstrap 5 + JavaScript
-- Security    : BCrypt (jBCrypt), HttpSession, CSRF Token Filter
+- Security    : BCrypt (jBCrypt), HttpSession, CSRF Token Filter,
+                env-var config (no hardcoded secrets), SameSite cookies
 
 ═══════════════════════════════════════════
  SQL SERVER CONNECTION CONFIGURATION
 ═══════════════════════════════════════════
-// DatabaseConnection.java — Singleton + SQL Server
+// DatabaseConnection.java — Singleton owning a HikariCP connection POOL.
+// SECURITY: credentials come from environment variables (never hardcoded);
+// each caller gets its OWN pooled connection and MUST close it (try-with-resources).
 public class DatabaseConnection {
-    private static final String URL =
-        "jdbc:sqlserver://localhost:1433;databaseName=SportsClubDB;" +
-        "encrypt=true;trustServerCertificate=true";
-    private static final String USER     = "sa";
-    private static final String PASSWORD = "YourPassword123";
 
     private static volatile DatabaseConnection instance;
-    private Connection connection;
+    private final HikariDataSource dataSource;
 
-    private DatabaseConnection() throws SQLException {
-        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        this.connection = DriverManager.getConnection(URL, USER, PASSWORD);
+    private DatabaseConnection() {
+        String host      = env("DB_HOST", "localhost");
+        String port      = env("DB_PORT", "1433");
+        String dbName    = env("DB_NAME", "SportsClubDB");
+        String user      = env("DB_USER", "sa");
+        String password  = env("DB_PASSWORD", "P@ssw0rd");
+        boolean trustCert = Boolean.parseBoolean(env("DB_TRUST_CERT", "true"));
+
+        String url = String.format(
+            "jdbc:sqlserver://%s:%s;databaseName=%s;encrypt=true;trustServerCertificate=%s",
+            host, port, dbName, trustCert);
+
+        HikariConfig config = new HikariConfig();
+        config.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        config.setJdbcUrl(url);
+        config.setUsername(user);
+        config.setPassword(password);
+        config.setMaximumPoolSize(10);
+        config.setMinimumIdle(2);
+        config.setConnectionTimeout(30_000);
+        config.setPoolName("SportsClubPool");
+        this.dataSource = new HikariDataSource(config);
+    }
+
+    private static String env(String key, String def) {
+        String v = System.getenv(key);
+        return (v != null && !v.trim().isEmpty()) ? v : def;
     }
 
     // Double-checked locking Singleton
-    public static DatabaseConnection getInstance() throws SQLException {
+    public static DatabaseConnection getInstance() {
         if (instance == null) {
             synchronized (DatabaseConnection.class) {
                 if (instance == null) instance = new DatabaseConnection();
@@ -41,16 +64,13 @@ public class DatabaseConnection {
         return instance;
     }
 
-    public Connection getConnection() {
-        try {
-            if (connection == null || connection.isClosed())
-                connection = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (SQLException e) { e.printStackTrace(); }
-        return connection;
+    // Borrow a pooled connection — caller MUST close it (try-with-resources)
+    public Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 }
 
-// pom.xml — required dependencies
+// pom.xml — required dependencies (Jakarta EE / Tomcat 10)
 <dependency>
     <groupId>com.microsoft.sqlserver</groupId>
     <artifactId>mssql-jdbc</artifactId>
@@ -62,15 +82,20 @@ public class DatabaseConnection {
     <version>0.4</version>
 </dependency>
 <dependency>
-    <groupId>javax.servlet</groupId>
-    <artifactId>javax.servlet-api</artifactId>
-    <version>4.0.1</version>
+    <groupId>com.zaxxer</groupId>
+    <artifactId>HikariCP</artifactId>
+    <version>5.1.0</version>
+</dependency>
+<dependency>
+    <groupId>jakarta.servlet</groupId>
+    <artifactId>jakarta.servlet-api</artifactId>
+    <version>5.0.0</version>
     <scope>provided</scope>
 </dependency>
 <dependency>
-    <groupId>jstl</groupId>
-    <artifactId>jstl</artifactId>
-    <version>1.2</version>
+    <groupId>org.glassfish.web</groupId>
+    <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+    <version>2.0.0</version>
 </dependency>
 
 ═══════════════════════════════════════════
@@ -390,7 +415,9 @@ ITERATOR USAGE EXAMPLES (must be included in code):
 ═══════════════════════════════════════════
  SUPPORTING PATTERNS
 ═══════════════════════════════════════════
-- Singleton : DatabaseConnection (double-checked locking, SQL Server)
+- Singleton : DatabaseConnection (double-checked locking) — owns a HikariCP
+              connection pool; DAOs borrow and close a connection per call
+              (no single shared Connection across threads)
 - DAO       : UserDAO, MemberDAO, CoachDAO, ClassDAO,
               ScheduleDAO, EnrollmentDAO, PackageDAO
               (all use PreparedStatement with SQL Server syntax)
@@ -411,6 +438,13 @@ ITERATOR USAGE EXAMPLES (must be included in code):
 
 1. AUTHENTICATION
    - Registration : validate all inputs, hash password with BCrypt (cost = 12)
+   - Password policy: PasswordPolicy.validate() — min 8 chars, must contain
+                    both letters and numbers (used by register, admin add-member,
+                    and member password change)
+   - Password change: requires re-entering the CURRENT password before a new
+                    one is accepted (MemberProfileServlet)
+   - Account enumeration: register returns one generic message for a taken
+                    username OR email — never reveals which
    - Login        : verify BCrypt hash, regenerate session ID after login
    - Logout       : call session.invalidate() completely
    - Brute force  : lock account for 15 minutes after 5 failed attempts,
@@ -424,6 +458,10 @@ ITERATOR USAGE EXAMPLES (must be included in code):
        /member/* → MEMBER only
    - Not authenticated → redirect to /login
    - Insufficient role → forward to /error/403.jsp
+   - Object-level checks (IDOR prevention): beyond URL-prefix RBAC, servlets
+     verify ownership of the requested record. E.g. CoachClassServlet only
+     exposes a class (and its enrolled members) when class.coachId == the
+     logged-in coach's id — guessing another coach's classId is denied.
 
 3. SQL INJECTION PREVENTION
    - Use PreparedStatement 100% — never concatenate SQL strings
@@ -440,6 +478,9 @@ ITERATOR USAGE EXAMPLES (must be included in code):
    - Every POST form includes: <input type="hidden" name="_csrf" value="${csrfToken}">
    - Filter validates token before processing any POST request,
      reject request if token does not match
+   - Token comparison uses MessageDigest.isEqual() (constant time) to avoid
+     leaking the token through a timing side channel
+   - Defense-in-depth: session cookie is also marked SameSite=Strict (see §7)
 
 6. SECURITY HEADERS — SecurityHeadersFilter
    X-Content-Type-Options  : nosniff
@@ -449,10 +490,19 @@ ITERATOR USAGE EXAMPLES (must be included in code):
    Strict-Transport-Security: max-age=31536000
 
 7. SESSION SECURITY
-   - Cookie flags: HttpOnly=true, Secure=true
+   - Cookie flags: HttpOnly=true; Secure=true in production (false for local
+     HTTP dev, set in web.xml); SameSite=Strict via META-INF/context.xml
+     (Tomcat Rfc6265CookieProcessor) so the cookie is never sent cross-site
    - Session timeout: 30 minutes of inactivity
    - Session fixation protection: invalidate old session,
      create new session immediately after successful login
+
+8. SECRETS & TRANSPORT CONFIG
+   - DB credentials are read from environment variables (DB_HOST, DB_PORT,
+     DB_NAME, DB_USER, DB_PASSWORD) — no secrets hardcoded in source
+   - DB_TRUST_CERT toggles SQL Server TLS certificate validation; set it to
+     false in production so the server certificate is actually verified
+     (prevents man-in-the-middle), true only for local dev
 
 ═══════════════════════════════════════════
  PROJECT STRUCTURE (MAVEN)
@@ -497,11 +547,14 @@ sports-club-management/
 │   │   ├── CsrfFilter.java
 │   │   └── SecurityHeadersFilter.java
 │   └── util/
-│       ├── DatabaseConnection.java           ← Singleton (SQL Server)
+│       ├── DatabaseConnection.java           ← Singleton + HikariCP pool (env-var config)
 │       ├── BCryptUtil.java
 │       ├── HtmlUtils.java
+│       ├── PasswordPolicy.java               ← Password strength rules
 │       └── CsrfUtils.java
 ├── src/main/webapp/
+│   ├── META-INF/
+│   │   └── context.xml                       ← SameSite=Strict cookie processor
 │   ├── WEB-INF/
 │   │   ├── web.xml
 │   │   └── views/

@@ -1,6 +1,8 @@
 package com.sportsclub.util;
 
 import jakarta.servlet.http.HttpSession;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.UUID;
 
 /**
@@ -21,10 +23,14 @@ public class CsrfUtils {
         return token;
     }
 
-    // Validate that the submitted token matches the session token
+    // Validate that the submitted token matches the session token.
+    // Uses a constant-time comparison to avoid leaking the token via timing.
     public static boolean isValidToken(HttpSession session, String submittedToken) {
         if (session == null || submittedToken == null) return false;
         String sessionToken = (String) session.getAttribute(CSRF_TOKEN_KEY);
-        return submittedToken.equals(sessionToken);
+        if (sessionToken == null) return false;
+        return MessageDigest.isEqual(
+            sessionToken.getBytes(StandardCharsets.UTF_8),
+            submittedToken.getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -5,6 +5,7 @@ import com.sportsclub.dao.UserDAO;
 import com.sportsclub.model.User;
 import com.sportsclub.util.BCryptUtil;
 import com.sportsclub.util.CsrfUtils;
+import com.sportsclub.util.PasswordPolicy;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -51,16 +52,15 @@ public class RegisterServlet extends HttpServlet {
                 setError(req, resp, "Mật khẩu không khớp.");
                 return;
             }
-            if (password.length() < 8) {
-                setError(req, resp, "Mật khẩu phải có ít nhất 8 ký tự.");
+            String pwError = PasswordPolicy.validate(password);
+            if (pwError != null) {
+                setError(req, resp, pwError);
                 return;
             }
-            if (userDAO.findByUsername(username) != null) {
-                setError(req, resp, "Tên đăng nhập đã được sử dụng.");
-                return;
-            }
-            if (userDAO.findByEmail(email) != null) {
-                setError(req, resp, "Email đã được đăng ký.");
+            // ACCOUNT ENUMERATION PREVENTION — a single generic message so an
+            // attacker cannot tell whether the username or the email already exists.
+            if (userDAO.findByUsername(username) != null || userDAO.findByEmail(email) != null) {
+                setError(req, resp, "Tên đăng nhập hoặc email đã được sử dụng.");
                 return;
             }
 

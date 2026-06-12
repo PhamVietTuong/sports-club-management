@@ -21,7 +21,8 @@ public class MemberDAO {
         String sql = "SELECT m.*, u.username, u.email, u.phone, u.password_hash, u.created_at " +
                      "FROM members m INNER JOIN users u ON m.user_id = u.id " +
                      "ORDER BY m.join_date DESC";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         }
@@ -34,7 +35,8 @@ public class MemberDAO {
         String sql = "SELECT m.*, u.username, u.email, u.phone, u.password_hash, u.created_at " +
                      "FROM members m INNER JOIN users u ON m.user_id = u.id " +
                      "WHERE m.status = ? ORDER BY m.join_date DESC";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
@@ -46,7 +48,8 @@ public class MemberDAO {
     public Member findById(int id) throws SQLException {
         String sql = "SELECT m.*, u.username, u.email, u.phone, u.password_hash, u.created_at " +
                      "FROM members m INNER JOIN users u ON m.user_id = u.id WHERE m.id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -58,7 +61,8 @@ public class MemberDAO {
     public Member findByUserId(int userId) throws SQLException {
         String sql = "SELECT m.*, u.username, u.email, u.phone, u.password_hash, u.created_at " +
                      "FROM members m INNER JOIN users u ON m.user_id = u.id WHERE m.user_id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -72,7 +76,8 @@ public class MemberDAO {
                       LocalDate expiryDate) throws SQLException {
         String sql = "INSERT INTO members (user_id, full_name, gender, date_of_birth, " +
                      "address, package_id, expiry_date) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = getConn().prepareStatement(
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, userId);
             ps.setString(2, fullName);
@@ -92,7 +97,8 @@ public class MemberDAO {
     public void update(Member m) throws SQLException {
         String sql = "UPDATE members SET full_name=?, gender=?, date_of_birth=?, " +
                      "address=?, package_id=?, expiry_date=?, status=? WHERE id=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, m.getFullName());
             ps.setString(2, m.getGender());
             ps.setDate(3, m.getDateOfBirth() != null ? Date.valueOf(m.getDateOfBirth()) : null);
@@ -107,7 +113,8 @@ public class MemberDAO {
 
     public void updateStatus(int id, String status) throws SQLException {
         String sql = "UPDATE members SET status = ? WHERE id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setInt(2, id);
             ps.executeUpdate();
@@ -116,7 +123,8 @@ public class MemberDAO {
 
     public int countAll() throws SQLException {
         String sql = "SELECT COUNT(*) FROM members";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) return rs.getInt(1);
         }

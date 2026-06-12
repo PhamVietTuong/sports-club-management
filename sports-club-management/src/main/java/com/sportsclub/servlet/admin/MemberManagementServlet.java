@@ -8,6 +8,7 @@ import com.sportsclub.pattern.iterator.ClubIterator;
 import com.sportsclub.pattern.iterator.MemberCollection;
 import com.sportsclub.util.BCryptUtil;
 import com.sportsclub.util.CsrfUtils;
+import com.sportsclub.util.PasswordPolicy;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -108,7 +109,7 @@ public class MemberManagementServlet extends HttpServlet {
             resp.sendRedirect(ctx + "/admin/members?error=fields");
             return;
         }
-        if (password.length() < 8) {
+        if (!PasswordPolicy.isValid(password)) {
             resp.sendRedirect(ctx + "/admin/members?error=pwd");
             return;
         }

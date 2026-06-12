@@ -131,9 +131,15 @@
                 </p>
 
                 <div class="form-group">
+                    <label class="form-label">Mật khẩu hiện tại</label>
+                    <input type="password" name="currentPassword" class="form-control"
+                           placeholder="Bắt buộc khi đổi mật khẩu">
+                </div>
+
+                <div class="form-group">
                     <label class="form-label">Mật khẩu mới</label>
                     <input type="password" name="newPassword" class="form-control"
-                           minlength="8" placeholder="Tối thiểu 8 ký tự">
+                           minlength="8" placeholder="Tối thiểu 8 ký tự, gồm chữ và số">
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 mt-8px">

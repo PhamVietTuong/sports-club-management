@@ -21,7 +21,8 @@ public class UserDAO {
     // SQL INJECTION PREVENTION — parameterised query with ?
     public User findByUsername(String username) throws SQLException {
         String sql = "SELECT * FROM users WHERE username = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -32,7 +33,8 @@ public class UserDAO {
 
     public User findByEmail(String email) throws SQLException {
         String sql = "SELECT * FROM users WHERE email = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, email);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -43,7 +45,8 @@ public class UserDAO {
 
     public User findById(int id) throws SQLException {
         String sql = "SELECT * FROM users WHERE id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -57,7 +60,8 @@ public class UserDAO {
                       String email, String phone, String role) throws SQLException {
         String sql = "INSERT INTO users (username, password_hash, email, phone, role) " +
                      "VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = getConn().prepareStatement(
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, username);
             ps.setString(2, passwordHash);
@@ -74,7 +78,8 @@ public class UserDAO {
 
     public void updatePassword(int userId, String newHash) throws SQLException {
         String sql = "UPDATE users SET password_hash = ? WHERE id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, newHash);
             ps.setInt(2, userId);
             ps.executeUpdate();
@@ -84,7 +89,8 @@ public class UserDAO {
     // BRUTE-FORCE PROTECTION — log every login attempt
     public void logLoginAttempt(String username, String ip, boolean success) throws SQLException {
         String sql = "INSERT INTO login_attempts (username, ip_address, is_success) VALUES (?, ?, ?)";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             ps.setString(2, ip);
             ps.setBoolean(3, success);
@@ -97,7 +103,8 @@ public class UserDAO {
         String sql = "SELECT COUNT(*) FROM login_attempts " +
                      "WHERE username = ? AND is_success = 0 " +
                      "AND attempt_time > DATEADD(MINUTE, -15, GETDATE())";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);

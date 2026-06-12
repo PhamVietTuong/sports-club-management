@@ -17,7 +17,8 @@ public class PackageDAO {
     public List<TrainingPackage> findAll() throws SQLException {
         List<TrainingPackage> list = new ArrayList<>();
         String sql = "SELECT * FROM training_packages ORDER BY id";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         }
@@ -27,7 +28,8 @@ public class PackageDAO {
     public List<TrainingPackage> findActive() throws SQLException {
         List<TrainingPackage> list = new ArrayList<>();
         String sql = "SELECT * FROM training_packages WHERE is_active = 1 ORDER BY price";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         }
@@ -36,7 +38,8 @@ public class PackageDAO {
 
     public TrainingPackage findById(int id) throws SQLException {
         String sql = "SELECT * FROM training_packages WHERE id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -48,7 +51,8 @@ public class PackageDAO {
     public int save(TrainingPackage pkg) throws SQLException {
         String sql = "INSERT INTO training_packages (name, duration_months, price, max_classes, description, is_active) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = getConn().prepareStatement(
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, pkg.getName());
             ps.setInt(2, pkg.getDurationMonths());
@@ -67,7 +71,8 @@ public class PackageDAO {
     public void update(TrainingPackage pkg) throws SQLException {
         String sql = "UPDATE training_packages SET name=?, duration_months=?, price=?, " +
                      "max_classes=?, description=?, is_active=? WHERE id=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, pkg.getName());
             ps.setInt(2, pkg.getDurationMonths());
             ps.setDouble(3, pkg.getPrice());

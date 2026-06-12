@@ -18,7 +18,8 @@ public class ScheduleDAO {
         List<Schedule> list = new ArrayList<>();
         String sql = "SELECT s.*, tc.name AS class_name FROM schedules s " +
                      "INNER JOIN training_classes tc ON s.class_id = tc.id ORDER BY s.id";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         }
@@ -29,7 +30,8 @@ public class ScheduleDAO {
         List<Schedule> list = new ArrayList<>();
         String sql = "SELECT s.*, tc.name AS class_name FROM schedules s " +
                      "INNER JOIN training_classes tc ON s.class_id = tc.id WHERE s.class_id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, classId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
@@ -43,7 +45,8 @@ public class ScheduleDAO {
         String sql = "SELECT s.*, tc.name AS class_name FROM schedules s " +
                      "INNER JOIN training_classes tc ON s.class_id = tc.id " +
                      "WHERE tc.coach_id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, coachId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
@@ -58,7 +61,8 @@ public class ScheduleDAO {
                      "INNER JOIN training_classes tc ON s.class_id = tc.id " +
                      "INNER JOIN enrollments e ON e.class_id = tc.id " +
                      "WHERE e.member_id = ? AND e.status = 'ACTIVE'";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, memberId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) list.add(mapRow(rs));
@@ -70,7 +74,8 @@ public class ScheduleDAO {
     public Schedule findById(int id) throws SQLException {
         String sql = "SELECT s.*, tc.name AS class_name FROM schedules s " +
                      "INNER JOIN training_classes tc ON s.class_id = tc.id WHERE s.id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -82,7 +87,8 @@ public class ScheduleDAO {
     public int save(Schedule s) throws SQLException {
         String sql = "INSERT INTO schedules (class_id, day_of_week, start_time, end_time, room, repeat_weekly) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = getConn().prepareStatement(
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, s.getClassId());
             ps.setString(2, s.getDayOfWeek());
@@ -100,7 +106,8 @@ public class ScheduleDAO {
 
     public void update(Schedule s) throws SQLException {
         String sql = "UPDATE schedules SET class_id=?, day_of_week=?, start_time=?, end_time=?, room=?, repeat_weekly=? WHERE id=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, s.getClassId());
             ps.setString(2, s.getDayOfWeek());
             ps.setTime(3, Time.valueOf(s.getStartTime()));
@@ -114,7 +121,8 @@ public class ScheduleDAO {
 
     public void delete(int id) throws SQLException {
         String sql = "DELETE FROM schedules WHERE id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             ps.executeUpdate();
         }

@@ -19,7 +19,8 @@ public class CoachDAO {
         List<Coach> list = new ArrayList<>();
         String sql = "SELECT c.*, u.username, u.email, u.phone, u.password_hash, u.created_at " +
                      "FROM coaches c INNER JOIN users u ON c.user_id = u.id";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) list.add(mapRow(rs));
         }
@@ -29,7 +30,8 @@ public class CoachDAO {
     public Coach findById(int id) throws SQLException {
         String sql = "SELECT c.*, u.username, u.email, u.phone, u.password_hash, u.created_at " +
                      "FROM coaches c INNER JOIN users u ON c.user_id = u.id WHERE c.id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -41,7 +43,8 @@ public class CoachDAO {
     public Coach findByUserId(int userId) throws SQLException {
         String sql = "SELECT c.*, u.username, u.email, u.phone, u.password_hash, u.created_at " +
                      "FROM coaches c INNER JOIN users u ON c.user_id = u.id WHERE c.user_id = ?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return mapRow(rs);
@@ -54,7 +57,8 @@ public class CoachDAO {
                       String bio, int experience, double salary) throws SQLException {
         String sql = "INSERT INTO coaches (user_id, full_name, specialization, bio, experience, salary) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = getConn().prepareStatement(
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(
                 sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, userId);
             ps.setString(2, fullName);
@@ -72,7 +76,8 @@ public class CoachDAO {
 
     public void update(Coach c) throws SQLException {
         String sql = "UPDATE coaches SET full_name=?, specialization=?, bio=?, experience=?, salary=? WHERE id=?";
-        try (PreparedStatement ps = getConn().prepareStatement(sql)) {
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, c.getFullName());
             ps.setString(2, c.getSpecialization());
             ps.setString(3, c.getBio());
@@ -85,7 +90,8 @@ public class CoachDAO {
 
     public int countAll() throws SQLException {
         String sql = "SELECT COUNT(*) FROM coaches";
-        try (PreparedStatement ps = getConn().prepareStatement(sql);
+        try (Connection conn = getConn();
+             PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             if (rs.next()) return rs.getInt(1);
         }

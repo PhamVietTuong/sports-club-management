@@ -7,6 +7,7 @@ import com.sportsclub.model.Member;
 import com.sportsclub.model.User;
 import com.sportsclub.util.BCryptUtil;
 import com.sportsclub.util.CsrfUtils;
+import com.sportsclub.util.PasswordPolicy;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
@@ -55,8 +56,26 @@ public class MemberProfileServlet extends HttpServlet {
 
             String newPassword = req.getParameter("newPassword");
             if (newPassword != null && !newPassword.trim().isEmpty()) {
+                // PASSWORD CHANGE — require and verify the current password so a
+                // hijacked/unattended session cannot silently reset it.
+                String currentPassword = req.getParameter("currentPassword");
+                if (currentPassword == null
+                        || !BCryptUtil.checkPassword(currentPassword, loggedIn.getPasswordHash())) {
+                    req.getSession().setAttribute("flash", "Mật khẩu hiện tại không đúng.");
+                    resp.sendRedirect(req.getContextPath() + "/member/profile");
+                    return;
+                }
+                // Enforce the password strength policy
+                String pwError = PasswordPolicy.validate(newPassword);
+                if (pwError != null) {
+                    req.getSession().setAttribute("flash", pwError);
+                    resp.sendRedirect(req.getContextPath() + "/member/profile");
+                    return;
+                }
                 String hashed = BCryptUtil.hashPassword(newPassword);
                 userDAO.updatePassword(loggedIn.getId(), hashed);
+                // Keep the in-session hash current for any later change this session
+                loggedIn.setPasswordHash(hashed);
             }
 
             req.getSession().setAttribute("flash", "Cập nhật hồ sơ thành công.");
