@@ -1,3 +1,14 @@
-sports-club-management/CLAUDE.md
-.idea
-target/
+# IDE
+.idea/
+.vs/
+
+# .NET backend
+backend/**/bin/
+backend/**/obj/
+
+# React frontend
+frontend/node_modules/
+frontend/dist/
+
+# Local env overrides
+*.local
