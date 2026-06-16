@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 
 interface ModalProps {
   open: boolean
@@ -9,7 +10,11 @@ interface ModalProps {
 
 export default function Modal({ open, title, onClose, children }: ModalProps) {
   if (!open) return null
-  return (
+  // Render to <body> so the fixed-position backdrop centers on the viewport.
+  // The page content (`.page-body`) animates `transform`, which would otherwise
+  // make it the containing block for our `position: fixed` backdrop and offset
+  // the modal by the sidebar/top-bar instead of centering it on screen.
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -20,6 +25,7 @@ export default function Modal({ open, title, onClose, children }: ModalProps) {
         </div>
         <div className="modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
