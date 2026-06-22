@@ -12,6 +12,18 @@ public static class PasswordHasher
     public static string Hash(string plainText) =>
         BCrypt.Net.BCrypt.HashPassword(plainText, WorkFactor);
 
-    public static bool Verify(string plainText, string hash) =>
-        BCrypt.Net.BCrypt.Verify(plainText, hash);
+    public static bool Verify(string plainText, string hash)
+    {
+        // A malformed/garbage stored hash must fail closed (return false), never
+        // throw — an unhandled exception here would turn a bad login into a 500
+        // and could leak that the account row exists.
+        try
+        {
+            return BCrypt.Net.BCrypt.Verify(plainText, hash);
+        }
+        catch (BCrypt.Net.SaltParseException)
+        {
+            return false;
+        }
+    }
 }

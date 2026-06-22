@@ -29,6 +29,7 @@ public record CreateMemberRequest(
     [param: Required, EmailAddress] string Email,
     [param: Required] string Password,
     [param: Required] string FullName,
+    [param: RegularExpression(ValidationConstants.PhonePattern, ErrorMessage = ValidationConstants.PhoneError)]
     string? Phone,
     string? Gender,
     string? Address,

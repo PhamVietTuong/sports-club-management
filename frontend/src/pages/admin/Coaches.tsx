@@ -115,7 +115,9 @@ export default function Coaches() {
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">SĐT</label>
-              <input className="form-control" value={createForm.phone}
+              <input className="form-control" type="tel" value={createForm.phone}
+                pattern="(0|\+84)[0-9]{9}"
+                title="Số điện thoại không hợp lệ (định dạng: 0xxxxxxxxx hoặc +84xxxxxxxxx)."
                 onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} />
             </div>
             <div className="form-group">

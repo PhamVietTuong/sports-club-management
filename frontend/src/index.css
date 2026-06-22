@@ -481,6 +481,7 @@ tbody tr:last-child td {
 .btn-ghost:hover {
   background: var(--surface-2);
   border-color: #b9c0d0;
+  color:#1b2030;
 }
 .btn-danger {
   background: var(--red);

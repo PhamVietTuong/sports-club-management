@@ -12,6 +12,7 @@ public record RegisterRequest(
     [param: Required] string Password,
     [param: Required] string ConfirmPassword,
     [param: Required] string FullName,
+    [param: RegularExpression(ValidationConstants.PhonePattern, ErrorMessage = ValidationConstants.PhoneError)]
     string? Phone,
     string? Gender);
 

@@ -1,5 +1,7 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SportsClub.Api.Data;
@@ -15,6 +17,22 @@ var builder = WebApplication.CreateBuilder(args);
 var jwtSection = builder.Configuration.GetSection("Jwt");
 builder.Services.Configure<JwtSettings>(jwtSection);
 var jwtSettings = jwtSection.Get<JwtSettings>() ?? new JwtSettings();
+
+// API/JWT HARDENING — fail fast rather than ship a weak signing key. The value
+// committed to appsettings.json is a clearly-marked dev placeholder; in any
+// non-Development environment the key MUST be overridden (e.g. Jwt__Key env var)
+// with a strong secret, otherwise tokens could be forged.
+if (!builder.Environment.IsDevelopment())
+{
+    if (string.IsNullOrWhiteSpace(jwtSettings.Key)
+        || jwtSettings.Key.Contains("CHANGE_ME")
+        || Encoding.UTF8.GetByteCount(jwtSettings.Key) < 32)
+    {
+        throw new InvalidOperationException(
+            "Jwt:Key must be overridden with a strong secret (>= 32 bytes) outside Development. " +
+            "Set the Jwt__Key environment variable.");
+    }
+}
 
 // ── EF Core (SQL Server) ─────────────────────────────────────────────────────
 // SINGLETON PATTERN — the connection string comes from DatabaseConfig.Instance
@@ -61,6 +79,25 @@ builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy =>
     policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
 }));
 
+// RATE LIMITING — a second, IP-based layer in front of the per-username
+// brute-force lockout (and a general API-abuse guard). The "login" policy caps
+// login attempts from a single IP, so an attacker cannot spray many usernames
+// from one host to sidestep the per-account counter. Over-limit → HTTP 429.
+const string LoginRateLimit = "login";
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(LoginRateLimit, httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
@@ -91,6 +128,7 @@ else
 app.UseMiddleware<SecurityHeadersMiddleware>();
 
 app.UseCors(CorsPolicy);
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

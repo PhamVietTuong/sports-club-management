@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
 using SportsClub.Api.Repositories;
@@ -20,6 +21,13 @@ public class AuthController : ControllerBase
 {
     private const int MaxAttempts = 5;
 
+    // A BCrypt hash of a throwaway password, computed once at startup (cost 12,
+    // matching PasswordHasher). When the username does not exist we still run a
+    // verify against this so a failed login costs the same time regardless of
+    // whether the username is real — closing the timing side-channel that would
+    // otherwise let an attacker enumerate valid usernames.
+    private static readonly string DummyHash = PasswordHasher.Hash("dummy-password-not-used");
+
     private readonly UserRepository _users;
     private readonly MemberRepository _members;
     private readonly CoachRepository _coaches;
@@ -38,6 +46,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("login")]
     public async Task<IActionResult> Login(LoginRequest req)
     {
         string ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
@@ -49,8 +58,12 @@ public class AuthController : ControllerBase
 
         var user = await _users.FindByUsernameAsync(req.Username);
 
-        // BCrypt verification — constant-time inside BCrypt
-        if (user is null || !PasswordHasher.Verify(req.Password, user.PasswordHash))
+        // BCrypt verification — constant-time inside BCrypt. When the user does
+        // not exist, verify against a dummy hash anyway so a failed login costs
+        // the same regardless of whether the username is real (anti-enumeration
+        // via timing). The result for a missing user is always a failure.
+        bool passwordOk = PasswordHasher.Verify(req.Password, user?.PasswordHash ?? DummyHash);
+        if (user is null || !passwordOk)
         {
             await _users.LogLoginAttemptAsync(req.Username, ip, false);
             return Unauthorized(new MessageResponse(

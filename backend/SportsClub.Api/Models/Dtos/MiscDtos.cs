@@ -21,6 +21,7 @@ public record AdminStatsDto(int TotalMembers, int TotalCoaches, int TotalClasses
 
 public record UpdateProfileRequest(
     [param: Required] string FullName,
+    [param: RegularExpression(ValidationConstants.PhonePattern, ErrorMessage = ValidationConstants.PhoneError)]
     string? Phone,
     string? Address,
     string? CurrentPassword,
