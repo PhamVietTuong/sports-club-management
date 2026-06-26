@@ -13,6 +13,16 @@ public class CoachRepository
     public Task<List<Coach>> FindAllAsync() =>
         _db.Coaches.Include(c => c.User).OrderBy(c => c.Id).ToListAsync();
 
+    public Task<List<Coach>> FindByStatusAsync(string status) =>
+        _db.Coaches.Include(c => c.User)
+            .Where(c => c.Status == status)
+            .OrderBy(c => c.Id).ToListAsync();
+
+    public Task<List<Coach>> FindActiveAsync() =>
+        _db.Coaches.Include(c => c.User)
+            .Where(c => c.Status == "ACTIVE")
+            .OrderBy(c => c.FullName).ToListAsync();
+
     public Task<Coach?> FindByIdAsync(int id) =>
         _db.Coaches.Include(c => c.User).FirstOrDefaultAsync(c => c.Id == id);
 
@@ -30,6 +40,7 @@ public class CoachRepository
             Bio = bio,
             Experience = experience,
             Salary = salary,
+            Status = "ACTIVE",
         };
         _db.Coaches.Add(coach);
         await _db.SaveChangesAsync();
@@ -39,6 +50,14 @@ public class CoachRepository
     public async Task UpdateAsync(Coach c)
     {
         _db.Coaches.Update(c);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task UpdateStatusAsync(int id, string status)
+    {
+        var coach = await _db.Coaches.FirstOrDefaultAsync(c => c.Id == id);
+        if (coach is null) return;
+        coach.Status = status;
         await _db.SaveChangesAsync();
     }
 

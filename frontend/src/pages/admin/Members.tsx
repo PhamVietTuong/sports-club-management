@@ -19,6 +19,7 @@ export default function Members() {
   const [packages, setPackages] = useState<TrainingPackage[]>([])
   const [statusFilter, setStatusFilter] = useState('')
   const [error, setError] = useState('')
+  const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -48,7 +49,7 @@ export default function Members() {
   async function submit(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
-    setError('')
+    setFormError('')
     try {
       await api.post('/admin/members', {
         username: form.username,
@@ -67,7 +68,7 @@ export default function Members() {
       setFlash('Đã thêm thành viên.')
       load()
     } catch (err) {
-      setError(errorMessage(err))
+      setFormError(errorMessage(err))
     } finally {
       setBusy(false)
     }
@@ -85,7 +86,7 @@ export default function Members() {
             <option value="INACTIVE">INACTIVE</option>
             <option value="SUSPENDED">SUSPENDED</option>
           </select>
-          <button className="btn btn-primary" onClick={() => setOpen(true)}>+ Thêm thành viên</button>
+          <button className="btn btn-primary" onClick={() => { setFormError(''); setOpen(true) }}>+ Thêm thành viên</button>
         </div>
       </div>
 
@@ -127,8 +128,9 @@ export default function Members() {
         </table>
       </div>
 
-      <Modal open={open} title="Thêm thành viên" onClose={() => setOpen(false)}>
+      <Modal open={open} title="Thêm thành viên" onClose={() => { setFormError(''); setOpen(false) }}>
         <form onSubmit={submit}>
+          {formError && <div className="alert alert-danger">{formError}</div>}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Họ tên *</label>

@@ -8,9 +8,23 @@ const emptyCreate = {
   phone: '', specialization: '', bio: '', experience: '0', salary: '0',
 }
 
+// Coach employment status: đang làm việc / đang xem xét / đã nghỉ việc (bị sa thải)
+const STATUS_LABEL: Record<string, string> = {
+  ACTIVE: 'Đang làm việc',
+  UNDER_REVIEW: 'Đang xem xét',
+  TERMINATED: 'Đã nghỉ việc',
+}
+const STATUS_BADGE: Record<string, string> = {
+  ACTIVE: 'badge-active',
+  UNDER_REVIEW: 'badge-review',
+  TERMINATED: 'badge-terminated',
+}
+
 export default function Coaches() {
   const [coaches, setCoaches] = useState<Coach[]>([])
+  const [statusFilter, setStatusFilter] = useState('')
   const [error, setError] = useState('')
+  const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -18,15 +32,25 @@ export default function Coaches() {
   const [editing, setEditing] = useState<Coach | null>(null)
 
   function load() {
-    api.get<Coach[]>('/admin/coaches')
+    const q = statusFilter ? `?status=${statusFilter}` : ''
+    api.get<Coach[]>('/admin/coaches' + q)
       .then((res) => setCoaches(res.data))
       .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách huấn luyện viên.')))
   }
-  useEffect(load, [])
+  useEffect(load, [statusFilter])
+
+  async function changeStatus(id: number, status: string) {
+    try {
+      await api.patch(`/admin/coaches/${id}/status`, { status })
+      load()
+    } catch (err) {
+      setError(errorMessage(err))
+    }
+  }
 
   async function submitCreate(e: FormEvent) {
     e.preventDefault()
-    setBusy(true); setError('')
+    setBusy(true); setFormError('')
     try {
       await api.post('/admin/coaches', {
         username: createForm.username, email: createForm.email, password: createForm.password,
@@ -35,27 +59,36 @@ export default function Coaches() {
         experience: Number(createForm.experience), salary: Number(createForm.salary),
       })
       setCreateOpen(false); setCreateForm(emptyCreate); setFlash('Đã thêm huấn luyện viên.'); load()
-    } catch (err) { setError(errorMessage(err)) } finally { setBusy(false) }
+    } catch (err) { setFormError(errorMessage(err)) } finally { setBusy(false) }
   }
 
   async function submitEdit(e: FormEvent) {
     e.preventDefault()
     if (!editing) return
-    setBusy(true); setError('')
+    setBusy(true); setFormError('')
     try {
       await api.put(`/admin/coaches/${editing.id}`, {
         fullName: editing.fullName, specialization: editing.specialization,
         bio: editing.bio, experience: editing.experience, salary: editing.salary,
       })
       setEditing(null); setFlash('Đã cập nhật huấn luyện viên.'); load()
-    } catch (err) { setError(errorMessage(err)) } finally { setBusy(false) }
+    } catch (err) { setFormError(errorMessage(err)) } finally { setBusy(false) }
   }
 
   return (
     <>
       <div className="page-header">
         <h1>Huấn luyện viên</h1>
-        <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>+ Thêm HLV</button>
+        <div className="toolbar">
+          <select className="form-control" value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">Tất cả trạng thái</option>
+            <option value="ACTIVE">Đang làm việc</option>
+            <option value="UNDER_REVIEW">Đang xem xét</option>
+            <option value="TERMINATED">Đã nghỉ việc</option>
+          </select>
+          <button className="btn btn-primary" onClick={() => { setFormError(''); setCreateOpen(true) }}>+ Thêm HLV</button>
+        </div>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
@@ -66,7 +99,7 @@ export default function Coaches() {
           <thead>
             <tr>
               <th>ID</th><th>Họ tên</th><th>Chuyên môn</th><th>Kinh nghiệm</th>
-              <th>Lương</th><th>Email</th><th></th>
+              <th>Lương</th><th>Email</th><th>Trạng thái</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -79,17 +112,31 @@ export default function Coaches() {
                 <td>{c.salary.toLocaleString('vi-VN')}</td>
                 <td>{c.email}</td>
                 <td>
-                  <button className="btn btn-ghost btn-sm" onClick={() => setEditing({ ...c })}>Sửa</button>
+                  <span className={'badge ' + (STATUS_BADGE[c.status] ?? '')}>
+                    {STATUS_LABEL[c.status] ?? c.status}
+                  </span>
+                </td>
+                <td>
+                  <div className="toolbar">
+                    <select className="form-control btn-sm" value={c.status}
+                      onChange={(e) => changeStatus(c.id, e.target.value)}>
+                      <option value="ACTIVE">Đang làm việc</option>
+                      <option value="UNDER_REVIEW">Đang xem xét</option>
+                      <option value="TERMINATED">Đã nghỉ việc</option>
+                    </select>
+                    <button className="btn btn-ghost btn-sm" onClick={() => { setFormError(''); setEditing({ ...c }) }}>Sửa</button>
+                  </div>
                 </td>
               </tr>
             ))}
-            {coaches.length === 0 && <tr><td colSpan={7} className="empty">Chưa có HLV nào.</td></tr>}
+            {coaches.length === 0 && <tr><td colSpan={8} className="empty">Chưa có HLV nào.</td></tr>}
           </tbody>
         </table>
       </div>
 
-      <Modal open={createOpen} title="Thêm huấn luyện viên" onClose={() => setCreateOpen(false)}>
+      <Modal open={createOpen} title="Thêm huấn luyện viên" onClose={() => { setFormError(''); setCreateOpen(false) }}>
         <form onSubmit={submitCreate}>
+          {formError && <div className="alert alert-danger">{formError}</div>}
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Họ tên *</label>
@@ -147,9 +194,10 @@ export default function Coaches() {
         </form>
       </Modal>
 
-      <Modal open={!!editing} title="Sửa huấn luyện viên" onClose={() => setEditing(null)}>
+      <Modal open={!!editing} title="Sửa huấn luyện viên" onClose={() => { setFormError(''); setEditing(null) }}>
         {editing && (
           <form onSubmit={submitEdit}>
+            {formError && <div className="alert alert-danger">{formError}</div>}
             <div className="form-group">
               <label className="form-label">Họ tên *</label>
               <input className="form-control" value={editing.fullName} required

@@ -13,11 +13,12 @@ public record CoachDto(
     string? Specialization,
     string? Bio,
     int Experience,
-    decimal Salary)
+    decimal Salary,
+    string Status)
 {
     public static CoachDto From(Coach c) => new(
         c.Id, c.UserId, c.User?.Username ?? "", c.User?.Email ?? "", c.User?.Phone,
-        c.FullName, c.Specialization, c.Bio, c.Experience, c.Salary);
+        c.FullName, c.Specialization, c.Bio, c.Experience, c.Salary, c.Status);
 }
 
 public record CreateCoachRequest(
@@ -38,3 +39,9 @@ public record UpdateCoachRequest(
     string? Bio,
     int Experience,
     decimal Salary);
+
+public record UpdateCoachStatusRequest([param: Required] string Status)
+{
+    /// <summary>Employment statuses allowed by the coaches table CHECK constraint.</summary>
+    public static readonly string[] Allowed = { "ACTIVE", "UNDER_REVIEW", "TERMINATED" };
+}

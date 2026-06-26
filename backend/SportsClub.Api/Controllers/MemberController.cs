@@ -19,10 +19,22 @@ public class MemberController : ControllerBase
     private readonly ScheduleRepository _schedules;
     private readonly EnrollmentRepository _enrollments;
     private readonly PackageRepository _packages;
+    private readonly PaymentRepository _payments;
+    private readonly AttendanceRepository _attendance;
+    private readonly LessonPlanRepository _lessonPlans;
+    private readonly ProgressNoteRepository _progress;
+    private readonly CoachRepository _coaches;
+    private readonly CoachRatingRepository _ratings;
+    private readonly HealthMetricRepository _health;
+    private readonly PtSessionRepository _pt;
 
     public MemberController(MemberRepository members, UserRepository users,
         ClassRepository classes, ScheduleRepository schedules,
-        EnrollmentRepository enrollments, PackageRepository packages)
+        EnrollmentRepository enrollments, PackageRepository packages,
+        PaymentRepository payments, AttendanceRepository attendance,
+        LessonPlanRepository lessonPlans, ProgressNoteRepository progress,
+        CoachRepository coaches, CoachRatingRepository ratings,
+        HealthMetricRepository health, PtSessionRepository pt)
     {
         _members = members;
         _users = users;
@@ -30,6 +42,14 @@ public class MemberController : ControllerBase
         _schedules = schedules;
         _enrollments = enrollments;
         _packages = packages;
+        _payments = payments;
+        _attendance = attendance;
+        _lessonPlans = lessonPlans;
+        _progress = progress;
+        _coaches = coaches;
+        _ratings = ratings;
+        _health = health;
+        _pt = pt;
     }
 
     [HttpGet("dashboard")]
@@ -172,5 +192,238 @@ public class MemberController : ControllerBase
         }
 
         return Ok(new MessageResponse("Cập nhật hồ sơ thành công."));
+    }
+
+    // ── Module 2: Buy membership + payment history ───────────────────────────
+    [HttpGet("payments")]
+    public async Task<IActionResult> MyPayments()
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        return Ok((await _payments.FindByMemberIdAsync(member.Id)).Select(PaymentDto.From));
+    }
+
+    [HttpPost("membership/buy")]
+    public async Task<IActionResult> BuyMembership(BuyMembershipRequest req)
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+
+        var method = string.IsNullOrEmpty(req.Method) ? "CASH" : req.Method;
+        if (!BuyMembershipRequest.AllowedMethods.Contains(method))
+            return BadRequest(new MessageResponse("Phương thức thanh toán không hợp lệ."));
+
+        var pkg = await _packages.FindByIdAsync(req.PackageId);
+        if (pkg is null || !pkg.IsActive)
+            return BadRequest(new MessageResponse("Gói tập không khả dụng."));
+
+        // Record the payment at the package's listed price.
+        await _payments.SaveAsync(new Payment
+        {
+            MemberId = member.Id,
+            PackageId = pkg.Id,
+            Amount = pkg.Price,
+            Method = method,
+            Status = "COMPLETED",
+            Description = $"Mua gói {pkg.Name}",
+            PaidAt = DateTime.Now,
+        });
+
+        // Extend the membership: stack onto the remaining time if not yet expired.
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var start = member.ExpiryDate is { } exp && exp > today ? exp : today;
+        member.PackageId = pkg.Id;
+        member.ExpiryDate = start.AddMonths(pkg.DurationMonths);
+        member.Status = "ACTIVE";
+        await _members.UpdateAsync(member);
+
+        return Ok(new MessageResponse($"Đã mua gói {pkg.Name}. Hạn mới: {member.ExpiryDate:dd/MM/yyyy}."));
+    }
+
+    // ── Module 3: Self check-in + attendance history ─────────────────────────
+    [HttpPost("classes/{id:int}/checkin")]
+    public async Task<IActionResult> CheckIn(int id)
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+
+        // Only an actively-enrolled member may check in to a class.
+        if (!await _enrollments.IsEnrolledAsync(member.Id, id))
+            return BadRequest(new MessageResponse("Bạn chưa đăng ký lớp này."));
+
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        await _attendance.UpsertAsync(id, member.Id, today, "PRESENT", checkedIn: true);
+        return Ok(new MessageResponse("Đã check-in hôm nay."));
+    }
+
+    [HttpGet("attendance")]
+    public async Task<IActionResult> MyAttendance()
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        return Ok((await _attendance.FindByMemberIdAsync(member.Id)).Select(AttendanceDto.From));
+    }
+
+    // ── Module 4: Receive lesson plans + read own progress ───────────────────
+    [HttpGet("lesson-plans")]
+    public async Task<IActionResult> MyLessonPlans()
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+
+        // Only plans for classes the member is actively enrolled in.
+        var classIds = (await _enrollments.FindByMemberIdAsync(member.Id))
+            .Where(e => e.Status == "ACTIVE").Select(e => e.ClassId).Distinct().ToList();
+        var plans = await _lessonPlans.FindByClassIdsAsync(classIds);
+        return Ok(plans.Select(LessonPlanDto.From));
+    }
+
+    [HttpGet("progress")]
+    public async Task<IActionResult> MyProgress()
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        return Ok((await _progress.FindByMemberIdAsync(member.Id)).Select(ProgressNoteDto.From));
+    }
+
+    // ── Module 5: Coaches list + rate a coach ────────────────────────────────
+    [HttpGet("coaches")]
+    public async Task<IActionResult> Coaches()
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+
+        var activeCoaches = await _coaches.FindActiveAsync();
+        var aggregates = (await _ratings.AveragesAsync()).ToDictionary(a => a.CoachId);
+        var myRatings = (await _ratings.FindByMemberIdAsync(member.Id)).ToDictionary(r => r.CoachId);
+        var myCoachIds = await MyCoachIdsAsync(member.Id);
+
+        var list = activeCoaches.Select(c =>
+        {
+            aggregates.TryGetValue(c.Id, out var agg);
+            myRatings.TryGetValue(c.Id, out var mine);
+            return new RateableCoachDto(
+                c.Id, c.FullName, c.Specialization, c.Experience,
+                agg is null ? 0 : Math.Round(agg.Average, 1), agg?.Count ?? 0,
+                mine?.Rating, mine?.Comment, myCoachIds.Contains(c.Id));
+        });
+        return Ok(list);
+    }
+
+    [HttpPost("coaches/{id:int}/rating")]
+    public async Task<IActionResult> RateCoach(int id, RateCoachRequest req)
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        if (await _coaches.FindByIdAsync(id) is null)
+            return NotFound(new MessageResponse("Không tìm thấy huấn luyện viên."));
+
+        // Only coaches who have actually trained this member can be rated.
+        var myCoachIds = await MyCoachIdsAsync(member.Id);
+        if (!myCoachIds.Contains(id))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new MessageResponse("Bạn chỉ có thể đánh giá HLV của lớp bạn đã tham gia."));
+
+        await _ratings.UpsertAsync(member.Id, id, req.Rating, req.Comment);
+        return Ok(new MessageResponse("Đã gửi đánh giá."));
+    }
+
+    // Coach ids behind every class this member has ever enrolled in.
+    private async Task<HashSet<int>> MyCoachIdsAsync(int memberId) =>
+        (await _enrollments.FindByMemberIdAsync(memberId))
+            .Where(e => e.Class?.CoachId != null)
+            .Select(e => e.Class!.CoachId!.Value)
+            .ToHashSet();
+
+    // ── Module 6: Health tracking ────────────────────────────────────────────
+    [HttpGet("health")]
+    public async Task<IActionResult> MyHealth()
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        return Ok((await _health.FindByMemberIdAsync(member.Id)).Select(HealthMetricDto.From));
+    }
+
+    [HttpPost("health")]
+    public async Task<IActionResult> AddHealth(SaveHealthMetricRequest req)
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        await _health.SaveAsync(new HealthMetric
+        {
+            MemberId = member.Id,
+            RecordedDate = req.RecordedDate,
+            WeightKg = req.WeightKg,
+            HeightCm = req.HeightCm,
+            BodyFatPct = req.BodyFatPct,
+            Notes = req.Notes,
+            CreatedAt = DateTime.Now,
+        });
+        return Ok(new MessageResponse("Đã lưu chỉ số sức khỏe."));
+    }
+
+    [HttpDelete("health/{id:int}")]
+    public async Task<IActionResult> DeleteHealth(int id)
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        var metric = await _health.FindByIdAsync(id);
+        if (metric is null || metric.MemberId != member.Id)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new MessageResponse("Bạn không có quyền với bản ghi này."));
+        await _health.DeleteAsync(metric);
+        return Ok(new MessageResponse("Đã xóa bản ghi."));
+    }
+
+    // ── Module 7: PT booking ─────────────────────────────────────────────────
+    [HttpGet("pt-sessions")]
+    public async Task<IActionResult> MyPtSessions()
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        return Ok((await _pt.FindByMemberIdAsync(member.Id)).Select(PtSessionDto.From));
+    }
+
+    [HttpPost("pt-sessions")]
+    public async Task<IActionResult> BookPt(BookPtRequest req)
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+
+        var coach = await _coaches.FindByIdAsync(req.CoachId);
+        if (coach is null || coach.Status != "ACTIVE")
+            return BadRequest(new MessageResponse("Huấn luyện viên không khả dụng."));
+        if (!TimeOnly.TryParse(req.StartTime, out var start) || !TimeOnly.TryParse(req.EndTime, out var end))
+            return BadRequest(new MessageResponse("Giờ bắt đầu/kết thúc không hợp lệ."));
+        if (end <= start)
+            return BadRequest(new MessageResponse("Giờ kết thúc phải sau giờ bắt đầu."));
+
+        await _pt.SaveAsync(new PtSession
+        {
+            MemberId = member.Id,
+            CoachId = req.CoachId,
+            SessionDate = req.SessionDate,
+            StartTime = start,
+            EndTime = end,
+            Status = "PENDING",
+            Notes = req.Notes,
+            CreatedAt = DateTime.Now,
+        });
+        return Ok(new MessageResponse("Đã đặt lịch PT. Chờ huấn luyện viên xác nhận."));
+    }
+
+    [HttpPost("pt-sessions/{id:int}/cancel")]
+    public async Task<IActionResult> CancelPt(int id)
+    {
+        var member = await _members.FindByUserIdAsync(User.GetUserId());
+        if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
+        var s = await _pt.FindByIdAsync(id);
+        if (s is null || s.MemberId != member.Id)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new MessageResponse("Bạn không có quyền với lịch này."));
+        if (s.Status is "CANCELLED" or "COMPLETED")
+            return BadRequest(new MessageResponse("Lịch đã kết thúc hoặc đã hủy."));
+        await _pt.UpdateStatusAsync(s, "CANCELLED");
+        return Ok(new MessageResponse("Đã hủy lịch PT."));
     }
 }

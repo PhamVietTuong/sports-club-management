@@ -59,4 +59,31 @@ public class ClassRepository
 
     public Task<int> CountActiveAsync() =>
         _db.TrainingClasses.CountAsync(c => c.IsActive);
+
+    /// <summary>Active classes with no coach assigned — available for a coach to claim.</summary>
+    public Task<List<TrainingClass>> FindUnassignedActiveAsync() =>
+        _db.TrainingClasses.Where(c => c.IsActive && c.CoachId == null)
+            .OrderBy(c => c.Id).ToListAsync();
+
+    /// <summary>
+    /// Atomically claim an unassigned class: a conditional UPDATE that only sets
+    /// the coach when the class is active and currently unassigned. Race-free —
+    /// two coaches cannot both claim the same class.
+    /// </summary>
+    public async Task<bool> TryClaimAsync(int classId, int coachId)
+    {
+        var affected = await _db.TrainingClasses
+            .Where(c => c.Id == classId && c.IsActive && c.CoachId == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.CoachId, coachId));
+        return affected > 0;
+    }
+
+    /// <summary>Release a class back to the unassigned pool — only the owning coach may.</summary>
+    public async Task<bool> ReleaseAsync(int classId, int coachId)
+    {
+        var affected = await _db.TrainingClasses
+            .Where(c => c.Id == classId && c.CoachId == coachId)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.CoachId, (int?)null));
+        return affected > 0;
+    }
 }

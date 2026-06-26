@@ -24,6 +24,11 @@ export default function MemberClasses() {
     try { await api.post(`/member/classes/${id}/cancel`); setFlash('Đã hủy đăng ký.'); load() }
     catch (err) { setError(errorMessage(err)) }
   }
+  async function checkIn(id: number) {
+    setError(''); setFlash('')
+    try { await api.post(`/member/classes/${id}/checkin`); setFlash('Đã check-in hôm nay.') }
+    catch (err) { setError(errorMessage(err)) }
+  }
 
   return (
     <>
@@ -43,9 +48,12 @@ export default function MemberClasses() {
                 <td>{c.coachName || '—'}</td>
                 <td>{c.level || '—'}</td>
                 <td>{c.availableSlots}/{c.capacity}</td>
-                <td>
+                <td className="actions">
                   {isEnrolled ? (
-                    <button className="btn btn-danger btn-sm" onClick={() => cancel(c.id)}>Hủy</button>
+                    <>
+                      <button className="btn btn-primary btn-sm" onClick={() => checkIn(c.id)}>Check-in</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => cancel(c.id)}>Hủy</button>
+                    </>
                   ) : (
                     <button className="btn btn-primary btn-sm" disabled={c.availableSlots <= 0}
                       onClick={() => enroll(c.id)}>

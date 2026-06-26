@@ -21,6 +21,15 @@ public class AppDbContext : DbContext
     public DbSet<Schedule> Schedules => Set<Schedule>();
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<LoginAttempt> LoginAttempts => Set<LoginAttempt>();
+    public DbSet<Equipment> Equipment => Set<Equipment>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<Attendance> Attendances => Set<Attendance>();
+    public DbSet<LessonPlan> LessonPlans => Set<LessonPlan>();
+    public DbSet<ProgressNote> ProgressNotes => Set<ProgressNote>();
+    public DbSet<CoachRating> CoachRatings => Set<CoachRating>();
+    public DbSet<HealthMetric> HealthMetrics => Set<HealthMetric>();
+    public DbSet<PtSession> PtSessions => Set<PtSession>();
+    public DbSet<Message> Messages => Set<Message>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -68,6 +77,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.Bio).HasColumnName("bio");
             e.Property(x => x.Experience).HasColumnName("experience").HasDefaultValue(0);
             e.Property(x => x.Salary).HasColumnName("salary").HasColumnType("decimal(12,2)").HasDefaultValue(0m);
+            e.Property(x => x.Status).HasColumnName("status").HasMaxLength(15).HasDefaultValue("ACTIVE");
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId);
         });
 
@@ -138,6 +148,144 @@ public class AppDbContext : DbContext
             e.Property(x => x.AttemptTime).HasColumnName("attempt_time").HasColumnType("datetime2")
                 .HasDefaultValueSql("GETDATE()");
             e.Property(x => x.IsSuccess).HasColumnName("is_success").HasDefaultValue(false);
+        });
+
+        b.Entity<Equipment>(e =>
+        {
+            e.ToTable("equipment");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+            e.Property(x => x.Category).HasColumnName("category").HasMaxLength(50);
+            e.Property(x => x.Quantity).HasColumnName("quantity").HasDefaultValue(1);
+            e.Property(x => x.Status).HasColumnName("status").HasMaxLength(15).HasDefaultValue("AVAILABLE");
+            e.Property(x => x.PurchaseDate).HasColumnName("purchase_date").HasColumnType("date");
+            e.Property(x => x.Notes).HasColumnName("notes");
+        });
+
+        b.Entity<Payment>(e =>
+        {
+            e.ToTable("payments");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.MemberId).HasColumnName("member_id");
+            e.Property(x => x.PackageId).HasColumnName("package_id");
+            e.Property(x => x.Amount).HasColumnName("amount").HasColumnType("decimal(12,2)");
+            e.Property(x => x.Method).HasColumnName("method").HasMaxLength(20).HasDefaultValue("CASH");
+            e.Property(x => x.Status).HasColumnName("status").HasMaxLength(15).HasDefaultValue("COMPLETED");
+            e.Property(x => x.Description).HasColumnName("description").HasMaxLength(255);
+            e.Property(x => x.PaidAt).HasColumnName("paid_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+            e.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId);
+        });
+
+        b.Entity<Attendance>(e =>
+        {
+            e.ToTable("attendance");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.ClassId).HasColumnName("class_id");
+            e.Property(x => x.MemberId).HasColumnName("member_id");
+            e.Property(x => x.SessionDate).HasColumnName("session_date").HasColumnType("date");
+            e.Property(x => x.Status).HasColumnName("status").HasMaxLength(15).HasDefaultValue("PRESENT");
+            e.Property(x => x.CheckedInAt).HasColumnName("checked_in_at").HasColumnType("datetime2");
+            e.HasIndex(x => new { x.ClassId, x.MemberId, x.SessionDate }).IsUnique();
+            e.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId);
+            e.HasOne(x => x.Class).WithMany().HasForeignKey(x => x.ClassId);
+        });
+
+        b.Entity<LessonPlan>(e =>
+        {
+            e.ToTable("lesson_plans");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.ClassId).HasColumnName("class_id");
+            e.Property(x => x.CoachId).HasColumnName("coach_id");
+            e.Property(x => x.Title).HasColumnName("title").HasMaxLength(150).IsRequired();
+            e.Property(x => x.Content).HasColumnName("content");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+            e.HasOne(x => x.Class).WithMany().HasForeignKey(x => x.ClassId);
+        });
+
+        b.Entity<ProgressNote>(e =>
+        {
+            e.ToTable("progress_notes");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.MemberId).HasColumnName("member_id");
+            e.Property(x => x.CoachId).HasColumnName("coach_id");
+            e.Property(x => x.ClassId).HasColumnName("class_id");
+            e.Property(x => x.Note).HasColumnName("note").IsRequired();
+            e.Property(x => x.Rating).HasColumnName("rating");
+            e.Property(x => x.RecordedAt).HasColumnName("recorded_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+            e.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId);
+        });
+
+        b.Entity<CoachRating>(e =>
+        {
+            e.ToTable("coach_ratings");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.MemberId).HasColumnName("member_id");
+            e.Property(x => x.CoachId).HasColumnName("coach_id");
+            e.Property(x => x.Rating).HasColumnName("rating");
+            e.Property(x => x.Comment).HasColumnName("comment").HasMaxLength(500);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+            e.HasIndex(x => new { x.MemberId, x.CoachId }).IsUnique();
+            e.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId);
+        });
+
+        b.Entity<HealthMetric>(e =>
+        {
+            e.ToTable("health_metrics");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.MemberId).HasColumnName("member_id");
+            e.Property(x => x.RecordedDate).HasColumnName("recorded_date").HasColumnType("date");
+            e.Property(x => x.WeightKg).HasColumnName("weight_kg").HasColumnType("decimal(5,2)");
+            e.Property(x => x.HeightCm).HasColumnName("height_cm").HasColumnType("decimal(5,2)");
+            e.Property(x => x.BodyFatPct).HasColumnName("body_fat_pct").HasColumnType("decimal(5,2)");
+            e.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(255);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+        });
+
+        b.Entity<PtSession>(e =>
+        {
+            e.ToTable("pt_sessions");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.MemberId).HasColumnName("member_id");
+            e.Property(x => x.CoachId).HasColumnName("coach_id");
+            e.Property(x => x.SessionDate).HasColumnName("session_date").HasColumnType("date");
+            e.Property(x => x.StartTime).HasColumnName("start_time").HasColumnType("time");
+            e.Property(x => x.EndTime).HasColumnName("end_time").HasColumnType("time");
+            e.Property(x => x.Status).HasColumnName("status").HasMaxLength(15).HasDefaultValue("PENDING");
+            e.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(255);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+            e.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId);
+            e.HasOne(x => x.Coach).WithMany().HasForeignKey(x => x.CoachId);
+        });
+
+        b.Entity<Message>(e =>
+        {
+            e.ToTable("messages");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.SenderUserId).HasColumnName("sender_user_id");
+            e.Property(x => x.RecipientUserId).HasColumnName("recipient_user_id");
+            e.Property(x => x.Body).HasColumnName("body").HasMaxLength(2000).IsRequired();
+            e.Property(x => x.SentAt).HasColumnName("sent_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+            e.Property(x => x.IsRead).HasColumnName("is_read").HasDefaultValue(false);
+            e.HasOne(x => x.Sender).WithMany().HasForeignKey(x => x.SenderUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+            e.HasOne(x => x.Recipient).WithMany().HasForeignKey(x => x.RecipientUserId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }

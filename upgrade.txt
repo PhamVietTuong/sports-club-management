@@ -1,0 +1,36 @@
+Admin
+│
+├── Tạo HLV
+├── Tạo gói tập
+├── Tạo lớp học
+├── Tạo lịch học
+├── Quản lý thiết bị
+├── Quản lý thanh toán
+└── Theo dõi doanh thu
+
+↓
+
+HLV
+│
+├── Nhận lớp
+├── Xem lịch
+├── Điểm danh
+├── Tạo giáo án
+├── Theo dõi tiến độ
+├── Chat với học viên
+└── Đánh giá học viên
+
+↓
+
+Học viên
+│
+├── Đăng ký tài khoản
+├── Mua Membership
+├── Đăng ký lớp
+├── Check-in
+├── Xem lịch tập
+├── Theo dõi sức khỏe
+├── Nhận giáo án
+├── Đặt lịch PT
+├── Thanh toán
+└── Đánh giá HLV

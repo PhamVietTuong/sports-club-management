@@ -49,6 +49,15 @@ builder.Services.AddScoped<ClassRepository>();
 builder.Services.AddScoped<PackageRepository>();
 builder.Services.AddScoped<ScheduleRepository>();
 builder.Services.AddScoped<EnrollmentRepository>();
+builder.Services.AddScoped<EquipmentRepository>();
+builder.Services.AddScoped<PaymentRepository>();
+builder.Services.AddScoped<AttendanceRepository>();
+builder.Services.AddScoped<LessonPlanRepository>();
+builder.Services.AddScoped<ProgressNoteRepository>();
+builder.Services.AddScoped<CoachRatingRepository>();
+builder.Services.AddScoped<HealthMetricRepository>();
+builder.Services.AddScoped<PtSessionRepository>();
+builder.Services.AddScoped<MessageRepository>();
 builder.Services.AddScoped<AccountService>();
 builder.Services.AddSingleton<JwtTokenService>();
 

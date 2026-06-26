@@ -22,8 +22,13 @@ public class AdminCoachesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CoachDto>>> List() =>
-        Ok((await _coaches.FindAllAsync()).Select(CoachDto.From));
+    public async Task<ActionResult<IEnumerable<CoachDto>>> List([FromQuery] string? status)
+    {
+        var source = string.IsNullOrEmpty(status)
+            ? await _coaches.FindAllAsync()
+            : await _coaches.FindByStatusAsync(status);
+        return Ok(source.Select(CoachDto.From));
+    }
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateCoachRequest req)
@@ -57,5 +62,21 @@ public class AdminCoachesController : ControllerBase
         await _coaches.UpdateAsync(coach);
 
         return Ok(new MessageResponse("Đã cập nhật huấn luyện viên."));
+    }
+
+    /// <summary>
+    /// Update a coach's employment status (ACTIVE / UNDER_REVIEW / TERMINATED).
+    /// Used by the admin to flag a coach for review or to fire one who no longer
+    /// meets the qualifications.
+    /// </summary>
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateStatus(int id, UpdateCoachStatusRequest req)
+    {
+        if (!UpdateCoachStatusRequest.Allowed.Contains(req.Status))
+            return BadRequest(new MessageResponse("Trạng thái không hợp lệ."));
+        if (await _coaches.FindByIdAsync(id) is null)
+            return NotFound(new MessageResponse("Không tìm thấy huấn luyện viên."));
+        await _coaches.UpdateStatusAsync(id, req.Status);
+        return Ok(new MessageResponse("Đã cập nhật trạng thái."));
     }
 }

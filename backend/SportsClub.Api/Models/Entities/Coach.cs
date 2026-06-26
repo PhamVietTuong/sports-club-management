@@ -17,6 +17,12 @@ public class Coach : ISportClubPrototype<Coach>
     public int Experience { get; set; }
     public decimal Salary { get; set; }
 
+    /// <summary>
+    /// Employment status: ACTIVE (đang làm việc), UNDER_REVIEW (đang xem xét —
+    /// considering whether to keep the coach) or TERMINATED (đã nghỉ việc — fired).
+    /// </summary>
+    public string Status { get; set; } = "ACTIVE";
+
     // Navigation
     public User User { get; set; } = null!;
 
