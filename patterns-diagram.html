@@ -1,0 +1,551 @@
+<title>Design Patterns — SportsClub (Prototype · Iterator · Singleton)</title>
+<style>
+  :root{
+    --ground:#f4f6f8; --panel:#ffffff; --ink:#1f2733; --muted:#5b6675;
+    --line:#d4dae2; --accent:#0f766e; --accent-soft:#0f766e22;
+    --green:#4a9d6e; --green-bg:#e7f3ec;
+    --blue:#3b6cb0; --blue-bg:#e8eef9;
+    --amber:#c8862f; --amber-bg:#fdf0e3;
+    --violet:#7e57c2; --violet-bg:#efe9f7;
+    --grey:#8a93a0; --grey-bg:#eceff3;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:40px 28px 72px;}
+  header.page{border-bottom:2px solid var(--accent); padding-bottom:22px; margin-bottom:8px;}
+  .eyebrow{
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; margin:0 0 6px;
+  }
+  h1{font-size:30px; margin:0 0 8px; letter-spacing:-.01em; text-wrap:balance;}
+  .lede{font-size:15px; color:var(--muted); max-width:70ch; margin:0;}
+  .legend{
+    display:flex; flex-wrap:wrap; gap:10px 26px; align-items:center;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:14px 18px; margin:22px 0 0;
+  }
+  .legend h2{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 8px 0 0;}
+  .leg-item{display:flex; align-items:center; gap:9px; font-size:13px; color:var(--ink);}
+  .leg-item svg{display:block;}
+
+  section.pat{margin-top:48px;}
+  .pat-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; border-left:4px solid var(--accent); padding-left:14px;}
+  .pat-head h2{font-size:23px; margin:0; letter-spacing:-.01em;}
+  .pat-head .tag{font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);}
+  .pat-intro{color:var(--muted); font-size:14px; margin:10px 0 0; max-width:78ch;}
+  .files{
+    font-family:ui-monospace,"Cascadia Code",Consolas,monospace; font-size:12.5px;
+    color:var(--accent); background:var(--accent-soft); border-radius:6px;
+    padding:2px 7px; white-space:nowrap;
+  }
+
+  .stage{
+    margin:22px 0 0; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:14px; overflow-x:auto;
+  }
+  .stage svg{display:block; width:100%; min-width:980px; height:auto;}
+
+  /* SVG box fills */
+  .b-iface{fill:var(--green-bg); stroke:var(--green);}
+  .b-concrete{fill:var(--blue-bg); stroke:var(--blue);}
+  .b-client{fill:var(--amber-bg); stroke:var(--amber);}
+  .b-bcl{fill:var(--violet-bg); stroke:var(--violet);}
+  .b-node{fill:var(--grey-bg); stroke:var(--grey);}
+  .box rect{stroke-width:1.6; rx:7;}
+  .t-title{font:700 14px ui-sans-serif,"Segoe UI",sans-serif; fill:var(--ink);}
+  .t-stereo{font:italic 11.5px ui-sans-serif,"Segoe UI",sans-serif; fill:var(--muted);}
+  .t-mem{font:12px ui-monospace,"Cascadia Code",Consolas,monospace; fill:#28303b;}
+  .t-mem.priv{fill:#7a4d8c;}
+  .t-note{font:italic 10.5px ui-sans-serif,sans-serif; fill:var(--muted);}
+  .divider{stroke:#c2cad4; stroke-width:1;}
+  .rel{stroke:#5b6675; stroke-width:1.6; fill:none;}
+  .rel.dash{stroke-dasharray:6 4;}
+  .rel-label{font:11.5px ui-sans-serif,"Segoe UI",sans-serif; fill:var(--muted);}
+  .rel-label.bg{paint-order:stroke; stroke:var(--panel); stroke-width:4px;}
+
+  .panels{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:20px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px;}
+  .card h3{font-size:13px; letter-spacing:.05em; text-transform:uppercase; margin:0 0 10px; color:var(--accent);}
+  .card ol,.card ul{margin:0; padding-left:18px;}
+  .card li{font-size:13.5px; margin:0 0 7px; color:var(--ink);}
+  .card code{font-family:ui-monospace,Consolas,monospace; font-size:12px; background:#eef1f4; padding:1px 5px; border-radius:4px;}
+  .card.example{background:#1f2733; border-color:#1f2733;}
+  .card.example h3{color:#7fd1c0;}
+  .card.example pre{margin:0; font-family:ui-monospace,Consolas,monospace; font-size:11.5px; color:#d7dde4; white-space:pre-wrap; line-height:1.5;}
+  .card.example .cm{color:#7e8a99;}
+  .card.example .kw{color:#cfa6f0;}
+  .card.example .st{color:#9ecb8a;}
+
+  @media(max-width:760px){.panels{grid-template-columns:1fr;} h1{font-size:25px;}}
+
+  @media print{
+    body{background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .wrap{max-width:none; padding:0 10px;}
+    section.pat{break-inside:avoid; page-break-inside:avoid;}
+    .stage{overflow:visible;} .stage svg{min-width:0;}
+  }
+</style>
+
+<div class="wrap">
+  <header class="page">
+    <p class="eyebrow">SportsClub · Design Patterns · ASP.NET Core 9 + EF Core</p>
+    <h1>Design Patterns — Prototype · Iterator · Singleton</h1>
+    <p class="lede">UML class diagrams of the three design patterns actually implemented in the backend, drawn from the source in <span class="files">Patterns/Prototype/</span>, <span class="files">Patterns/Iterator/</span> and <span class="files">Patterns/Singleton/</span> — the same diagram style as the reference Interpreter engine.</p>
+
+    <div class="legend">
+      <h2>Legend</h2>
+      <div class="leg-item">
+        <svg width="46" height="14"><line x1="2" y1="7" x2="32" y2="7" stroke="#5b6675" stroke-width="1.6" stroke-dasharray="6 4"/><path d="M44,7 L32,2 L32,12 Z" fill="#fff" stroke="#5b6675" stroke-width="1.4"/></svg>
+        Realization / implements
+      </div>
+      <div class="leg-item">
+        <svg width="46" height="14"><line x1="2" y1="7" x2="34" y2="7" stroke="#5b6675" stroke-width="1.6" stroke-dasharray="6 4"/><path d="M44,7 L34,3 M44,7 L34,11" fill="none" stroke="#5b6675" stroke-width="1.4"/></svg>
+        Dependency (uses)
+      </div>
+      <div class="leg-item">
+        <svg width="46" height="14"><line x1="14" y1="7" x2="44" y2="7" stroke="#5b6675" stroke-width="1.6"/><path d="M2,7 L9,3 L16,7 L9,11 Z" fill="#fff" stroke="#5b6675" stroke-width="1.4"/></svg>
+        Aggregation (has-a)
+      </div>
+      <div class="leg-item">
+        <svg width="46" height="14"><line x1="14" y1="7" x2="44" y2="7" stroke="#5b6675" stroke-width="1.6"/><path d="M2,7 L9,3 L16,7 L9,11 Z" fill="#1f2733" stroke="#1f2733" stroke-width="1.4"/></svg>
+        Composition (owns)
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================ PROTOTYPE ============================ -->
+  <section class="pat">
+    <div class="pat-head">
+      <h2>1 · Prototype Pattern</h2>
+      <span class="tag">Creational — clone, don't re-build</span>
+    </div>
+    <p class="pat-intro">Every cloneable domain object implements <code>ISportClubPrototype&lt;T&gt;.Clone()</code> with a shallow copy via <code>MemberwiseClone()</code>. The admin <code>/clone</code> endpoints duplicate a template entity, then tweak the copy (reset Id, rename, <code>+20%</code> price, etc.) instead of constructing it field-by-field — mirroring the original Java <code>Cloneable</code> root.</p>
+
+    <div class="stage">
+      <svg viewBox="0 0 1180 600" role="img" aria-label="Prototype pattern class diagram">
+        <defs>
+          <marker id="tri" markerWidth="15" markerHeight="13" refX="13" refY="6.5" orient="auto">
+            <path d="M0,0 L13,6.5 L0,13 Z" fill="#fff" stroke="#5b6675" stroke-width="1.3"/>
+          </marker>
+          <marker id="arr" markerWidth="12" markerHeight="12" refX="9" refY="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10" fill="none" stroke="#5b6675" stroke-width="1.5"/>
+          </marker>
+        </defs>
+
+        <!-- realization fan (entity -> interface) -->
+        <g class="rel dash">
+          <line x1="97"  y1="210" x2="460" y2="113" marker-end="url(#tri)"/>
+          <line x1="290" y1="210" x2="500" y2="113" marker-end="url(#tri)"/>
+          <line x1="483" y1="210" x2="560" y2="113" marker-end="url(#tri)"/>
+          <line x1="676" y1="210" x2="615" y2="113" marker-end="url(#tri)"/>
+          <line x1="869" y1="210" x2="668" y2="113" marker-end="url(#tri)"/>
+          <line x1="1062" y1="210" x2="715" y2="113" marker-end="url(#tri)"/>
+        </g>
+
+        <!-- client -> interface dependency (routed right) -->
+        <polyline class="rel dash" points="740,460 1160,460 1160,66 742,66" marker-end="url(#arr)"/>
+        <text class="rel-label bg" x="948" y="453">&#171;uses&#187; programs to Clone()</text>
+
+        <!-- INTERFACE -->
+        <g class="box">
+          <rect class="b-iface" x="440" y="20" width="300" height="94"/>
+          <text class="t-stereo" x="590" y="40" text-anchor="middle">&#171;interface&#187;</text>
+          <text class="t-title" x="590" y="58" text-anchor="middle">ISportClubPrototype&lt;out T&gt;</text>
+          <line class="divider" x1="440" y1="70" x2="740" y2="70"/>
+          <text class="t-mem" x="454" y="90">+ Clone() : T</text>
+          <text class="t-note" x="454" y="106">shallow copy — concrete type returned</text>
+        </g>
+
+        <!-- ENTITIES -->
+        <!-- User -->
+        <g class="box">
+          <rect class="b-concrete" x="10" y="210" width="175" height="150"/>
+          <text class="t-title" x="97" y="232" text-anchor="middle">User</text>
+          <line class="divider" x1="10" y1="242" x2="185" y2="242"/>
+          <text class="t-mem" x="22" y="262">- Id : int</text>
+          <text class="t-mem" x="22" y="280">- Username</text>
+          <text class="t-mem" x="22" y="298">- Role, Email</text>
+          <line class="divider" x1="10" y1="318" x2="185" y2="318"/>
+          <text class="t-mem" x="22" y="338">+ Clone()</text>
+          <text class="t-note" x="22" y="353">&#8627; MemberwiseClone()</text>
+        </g>
+        <!-- Member -->
+        <g class="box">
+          <rect class="b-concrete" x="203" y="210" width="175" height="150"/>
+          <text class="t-title" x="290" y="232" text-anchor="middle">Member</text>
+          <line class="divider" x1="203" y1="242" x2="378" y2="242"/>
+          <text class="t-mem" x="215" y="262">- Id : int</text>
+          <text class="t-mem" x="215" y="280">- FullName</text>
+          <text class="t-mem" x="215" y="298">- PackageId, Status</text>
+          <line class="divider" x1="203" y1="318" x2="378" y2="318"/>
+          <text class="t-mem" x="215" y="338">+ Clone()</text>
+          <text class="t-note" x="215" y="353">&#8627; MemberwiseClone()</text>
+        </g>
+        <!-- Coach -->
+        <g class="box">
+          <rect class="b-concrete" x="396" y="210" width="175" height="150"/>
+          <text class="t-title" x="483" y="232" text-anchor="middle">Coach</text>
+          <line class="divider" x1="396" y1="242" x2="571" y2="242"/>
+          <text class="t-mem" x="408" y="262">- Id : int</text>
+          <text class="t-mem" x="408" y="280">- FullName</text>
+          <text class="t-mem" x="408" y="298">- Specialization</text>
+          <line class="divider" x1="396" y1="318" x2="571" y2="318"/>
+          <text class="t-mem" x="408" y="338">+ Clone()</text>
+          <text class="t-note" x="408" y="353">&#8627; MemberwiseClone()</text>
+        </g>
+        <!-- TrainingClass -->
+        <g class="box">
+          <rect class="b-concrete" x="589" y="210" width="175" height="150"/>
+          <text class="t-title" x="676" y="232" text-anchor="middle">TrainingClass</text>
+          <line class="divider" x1="589" y1="242" x2="764" y2="242"/>
+          <text class="t-mem" x="601" y="262">- Id : int</text>
+          <text class="t-mem" x="601" y="280">- Name, Capacity</text>
+          <text class="t-mem" x="601" y="298">- IsActive</text>
+          <line class="divider" x1="589" y1="318" x2="764" y2="318"/>
+          <text class="t-mem" x="601" y="338">+ Clone()</text>
+          <text class="t-note" x="601" y="353">&#8627; MemberwiseClone()</text>
+        </g>
+        <!-- TrainingPackage -->
+        <g class="box">
+          <rect class="b-concrete" x="782" y="210" width="175" height="150"/>
+          <text class="t-title" x="869" y="232" text-anchor="middle">TrainingPackage</text>
+          <line class="divider" x1="782" y1="242" x2="957" y2="242"/>
+          <text class="t-mem" x="794" y="262">- Id : int</text>
+          <text class="t-mem" x="794" y="280">- Name</text>
+          <text class="t-mem" x="794" y="298">- Price : decimal</text>
+          <line class="divider" x1="782" y1="318" x2="957" y2="318"/>
+          <text class="t-mem" x="794" y="338">+ Clone()</text>
+          <text class="t-note" x="794" y="353">&#8627; MemberwiseClone()</text>
+        </g>
+        <!-- Schedule -->
+        <g class="box">
+          <rect class="b-concrete" x="975" y="210" width="175" height="150"/>
+          <text class="t-title" x="1062" y="232" text-anchor="middle">Schedule</text>
+          <line class="divider" x1="975" y1="242" x2="1150" y2="242"/>
+          <text class="t-mem" x="987" y="262">- Id : int</text>
+          <text class="t-mem" x="987" y="280">- DayOfWeek</text>
+          <text class="t-mem" x="987" y="298">- Start/EndTime</text>
+          <line class="divider" x1="975" y1="318" x2="1150" y2="318"/>
+          <text class="t-mem" x="987" y="338">+ Clone()</text>
+          <text class="t-note" x="987" y="353">&#8627; MemberwiseClone()</text>
+        </g>
+
+        <!-- CLIENT -->
+        <g class="box">
+          <rect class="b-client" x="340" y="430" width="400" height="140"/>
+          <text class="t-title" x="540" y="452" text-anchor="middle">Admin Controllers &#8212; Client</text>
+          <line class="divider" x1="340" y1="462" x2="740" y2="462"/>
+          <text class="t-mem" x="354" y="482">AdminClasses / Packages /</text>
+          <text class="t-mem" x="354" y="499">Schedules / MembersController</text>
+          <line class="divider" x1="340" y1="512" x2="740" y2="512"/>
+          <text class="t-mem" x="354" y="532">+ Clone(id):</text>
+          <text class="t-mem" x="354" y="549">&#160;&#160;var copy = template.Clone();</text>
+          <text class="t-mem" x="354" y="566">&#160;&#160;copy.Id = 0; Price *= 1.2m; …</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="panels">
+      <div class="card">
+        <h3>How it works</h3>
+        <ol>
+          <li>An admin requests <code>POST /…/{id}/clone</code>.</li>
+          <li>The controller loads the <em>template</em> entity from its repository.</li>
+          <li><code>template.Clone()</code> returns a shallow copy (<code>MemberwiseClone()</code>).</li>
+          <li>The copy is tweaked: <code>Id = 0</code>, renamed, navigation refs cleared.</li>
+          <li>The repository inserts it as a brand-new row.</li>
+        </ol>
+      </div>
+      <div class="card example">
+        <h3>Example — package clone</h3>
+<pre><span class="cm">// AdminPackagesController.Clone</span>
+<span class="kw">var</span> copy = template.Clone();
+copy.Id   = <span class="st">0</span>;
+copy.Name = <span class="st">"Copy of "</span> + template.Name;
+copy.Price = template.Price * <span class="st">1.2m</span>;
+<span class="cm">// 20% premium variant</span>
+<span class="kw">await</span> _packages.SaveAsync(copy);</pre>
+      </div>
+      <div class="card">
+        <h3>Benefits</h3>
+        <ul>
+          <li>Duplicate complex entities without re-typing every field.</li>
+          <li>One generic contract — add a prototype by implementing <code>Clone()</code>.</li>
+          <li>Client never depends on a concrete constructor.</li>
+          <li>Faithful to the original Java <code>Cloneable</code> design.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ ITERATOR ============================ -->
+  <section class="pat">
+    <div class="pat-head">
+      <h2>2 · Iterator Pattern</h2>
+      <span class="tag">Behavioral — traverse without exposing storage</span>
+    </div>
+    <p class="pat-intro">A single generic <code>ClubCollection&lt;T&gt;</code> wraps a <code>List&lt;T&gt;</code> and hands out a <code>ClubIterator&lt;T&gt;</code> (HasNext / Next / Reset). Because the collection also implements <code>IEnumerable&lt;T&gt;</code> — enumerating <em>through its own iterator</em> — list endpoints can call <code>ClubCollection.Of(src).Select(Dto.From)</code> and the projection still flows through the Iterator pattern.</p>
+
+    <div class="stage">
+      <svg viewBox="0 0 1180 720" role="img" aria-label="Iterator pattern class diagram">
+        <defs>
+          <marker id="tri2" markerWidth="15" markerHeight="13" refX="13" refY="6.5" orient="auto">
+            <path d="M0,0 L13,6.5 L0,13 Z" fill="#fff" stroke="#5b6675" stroke-width="1.3"/>
+          </marker>
+          <marker id="arr2" markerWidth="12" markerHeight="12" refX="9" refY="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10" fill="none" stroke="#5b6675" stroke-width="1.5"/>
+          </marker>
+          <marker id="diaF" markerWidth="18" markerHeight="12" refX="1" refY="5" orient="auto-start-reverse">
+            <path d="M0,5 L7,1 L14,5 L7,9 Z" fill="#1f2733" stroke="#1f2733" stroke-width="1"/>
+          </marker>
+          <marker id="diaH" markerWidth="18" markerHeight="12" refX="1" refY="5" orient="auto-start-reverse">
+            <path d="M0,5 L7,1 L14,5 L7,9 Z" fill="#fff" stroke="#5b6675" stroke-width="1.2"/>
+          </marker>
+        </defs>
+
+        <!-- realizations -->
+        <line class="rel dash" x1="190" y1="250" x2="190" y2="152" marker-end="url(#tri2)"/>
+        <line class="rel dash" x1="725" y1="250" x2="725" y2="172" marker-end="url(#tri2)"/>
+        <line class="rel dash" x1="905" y1="256" x2="1045" y2="132" marker-end="url(#tri2)"/>
+
+        <!-- dependencies (creates / returns) -->
+        <line class="rel dash" x1="540" y1="300" x2="342" y2="300" marker-end="url(#arr2)"/>
+        <text class="rel-label bg" x="441" y="293" text-anchor="middle">&#171;creates&#187;</text>
+        <line class="rel dash" x1="560" y1="100" x2="342" y2="100" marker-end="url(#arr2)"/>
+        <text class="rel-label bg" x="451" y="93" text-anchor="middle">returns</text>
+
+        <!-- composition: ClubCollection owns its List -->
+        <line class="rel" x1="660" y1="460" x2="525" y2="500" marker-start="url(#diaF)"/>
+        <text class="rel-label bg" x="600" y="488">owns</text>
+        <!-- aggregation: ClubIterator references the items -->
+        <line class="rel" x1="190" y1="410" x2="358" y2="525" marker-start="url(#diaH)"/>
+        <text class="rel-label bg" x="225" y="478">references</text>
+
+        <!-- client uses collection -->
+        <line class="rel dash" x1="780" y1="560" x2="780" y2="462" marker-end="url(#arr2)"/>
+        <text class="rel-label bg" x="792" y="512">&#171;uses&#187;</text>
+
+        <!-- IClubIterator -->
+        <g class="box">
+          <rect class="b-iface" x="40" y="30" width="300" height="124"/>
+          <text class="t-stereo" x="190" y="50" text-anchor="middle">&#171;interface&#187;  Iterator</text>
+          <text class="t-title" x="190" y="68" text-anchor="middle">IClubIterator&lt;out T&gt;</text>
+          <line class="divider" x1="40" y1="80" x2="340" y2="80"/>
+          <text class="t-mem" x="54" y="100">+ HasNext() : bool</text>
+          <text class="t-mem" x="54" y="118">+ Next() : T</text>
+          <text class="t-mem" x="54" y="136">+ Reset() : void</text>
+        </g>
+
+        <!-- ClubIterator -->
+        <g class="box">
+          <rect class="b-concrete" x="40" y="250" width="300" height="160"/>
+          <text class="t-stereo" x="190" y="270" text-anchor="middle">Concrete Iterator</text>
+          <text class="t-title" x="190" y="288" text-anchor="middle">ClubIterator&lt;T&gt;</text>
+          <line class="divider" x1="40" y1="298" x2="340" y2="298"/>
+          <text class="t-mem priv" x="54" y="318">- _items : IReadOnlyList&lt;T&gt;</text>
+          <text class="t-mem priv" x="54" y="336">- _index : int</text>
+          <line class="divider" x1="40" y1="352" x2="340" y2="352"/>
+          <text class="t-mem" x="54" y="372">+ HasNext() : bool</text>
+          <text class="t-mem" x="54" y="390">+ Next() : T   &#160;&#8627; _items[_index++]</text>
+        </g>
+
+        <!-- IClubCollection -->
+        <g class="box">
+          <rect class="b-iface" x="560" y="30" width="330" height="142"/>
+          <text class="t-stereo" x="725" y="50" text-anchor="middle">&#171;interface&#187;  Aggregate</text>
+          <text class="t-title" x="725" y="68" text-anchor="middle">IClubCollection&lt;T&gt;</text>
+          <line class="divider" x1="560" y1="80" x2="890" y2="80"/>
+          <text class="t-mem" x="574" y="100">+ Add(item : T) : void</text>
+          <text class="t-mem" x="574" y="118">+ Count : int</text>
+          <text class="t-mem" x="574" y="136">+ CreateIterator() :</text>
+          <text class="t-mem" x="574" y="154">&#160;&#160;&#160;&#160;&#160;IClubIterator&lt;T&gt;</text>
+        </g>
+
+        <!-- ClubCollection -->
+        <g class="box">
+          <rect class="b-concrete" x="540" y="250" width="370" height="210"/>
+          <text class="t-stereo" x="725" y="270" text-anchor="middle">Concrete Aggregate</text>
+          <text class="t-title" x="725" y="288" text-anchor="middle">ClubCollection&lt;T&gt;</text>
+          <text class="t-stereo" x="725" y="304" text-anchor="middle">: IClubCollection&lt;T&gt;, IEnumerable&lt;T&gt;</text>
+          <line class="divider" x1="540" y1="314" x2="910" y2="314"/>
+          <text class="t-mem priv" x="554" y="334">- _items : List&lt;T&gt;</text>
+          <line class="divider" x1="540" y1="348" x2="910" y2="348"/>
+          <text class="t-mem" x="554" y="368">+ Add(item : T) : void</text>
+          <text class="t-mem" x="554" y="386">+ Count : int</text>
+          <text class="t-mem" x="554" y="404">+ CreateIterator() : IClubIterator&lt;T&gt;</text>
+          <text class="t-mem" x="554" y="422">+ Of(source) : ClubCollection&lt;T&gt;  &#171;static&#187;</text>
+          <text class="t-mem" x="554" y="440">+ GetEnumerator() : IEnumerator&lt;T&gt;</text>
+        </g>
+
+        <!-- IEnumerable -->
+        <g class="box">
+          <rect class="b-bcl" x="950" y="40" width="190" height="92"/>
+          <text class="t-stereo" x="1045" y="60" text-anchor="middle">&#171;interface · BCL&#187;</text>
+          <text class="t-title" x="1045" y="78" text-anchor="middle">IEnumerable&lt;T&gt;</text>
+          <line class="divider" x1="950" y1="90" x2="1140" y2="90"/>
+          <text class="t-mem" x="964" y="112">+ GetEnumerator()</text>
+        </g>
+
+        <!-- shared items node -->
+        <g class="box">
+          <rect class="b-node" x="360" y="500" width="220" height="58"/>
+          <text class="t-title" x="470" y="524" text-anchor="middle">items : List&lt;T&gt;</text>
+          <text class="t-note" x="470" y="542" text-anchor="middle">shared element store</text>
+        </g>
+
+        <!-- CLIENT -->
+        <g class="box">
+          <rect class="b-client" x="600" y="560" width="370" height="124"/>
+          <text class="t-title" x="785" y="582" text-anchor="middle">Controllers &#8212; Client</text>
+          <line class="divider" x1="600" y1="592" x2="970" y2="592"/>
+          <text class="t-mem" x="614" y="612">Member / Coach /</text>
+          <text class="t-mem" x="614" y="630">AdminMembers·Classes·Schedules</text>
+          <line class="divider" x1="600" y1="644" x2="970" y2="644"/>
+          <text class="t-mem" x="614" y="664">ClubCollection&lt;T&gt;.Of(list)</text>
+          <text class="t-mem" x="614" y="682">&#160;&#160;&#160;&#160;.Select(Dto.From)</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="panels">
+      <div class="card">
+        <h3>How it works</h3>
+        <ol>
+          <li>A repository returns a raw <code>List&lt;T&gt;</code> of rows.</li>
+          <li><code>ClubCollection&lt;T&gt;.Of(list)</code> wraps it as an aggregate.</li>
+          <li><code>CreateIterator()</code> builds a <code>ClubIterator&lt;T&gt;</code> over the items.</li>
+          <li><code>GetEnumerator()</code> walks it with <code>while (HasNext) Next()</code>.</li>
+          <li>LINQ <code>.Select(Dto.From)</code> consumes that enumerator — traversal stays inside the pattern.</li>
+        </ol>
+      </div>
+      <div class="card example">
+        <h3>Example — list classes</h3>
+<pre><span class="cm">// AdminClassesController.List</span>
+<span class="kw">var</span> classes = ClubCollection&lt;TrainingClass&gt;
+    .Of(<span class="kw">await</span> _classes.FindAllAsync());
+
+<span class="kw">return</span> Ok(classes.Select(ClassDto.From));
+<span class="cm">// Select() pulls each item via</span>
+<span class="cm">// ClubIterator.HasNext()/Next()</span></pre>
+      </div>
+      <div class="card">
+        <h3>Benefits</h3>
+        <ul>
+          <li>Uniform traversal over any entity type — one generic collection.</li>
+          <li>Backing storage (<code>List&lt;T&gt;</code>) stays hidden from callers.</li>
+          <li><code>IEnumerable&lt;T&gt;</code> bridges the pattern to standard LINQ.</li>
+          <li>Replaces the per-entity Java collections with one type.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SINGLETON ============================ -->
+  <section class="pat">
+    <div class="pat-head">
+      <h2>3 · Singleton Pattern</h2>
+      <span class="tag">Creational — exactly one instance</span>
+    </div>
+    <p class="pat-intro"><code>DatabaseConfig</code> assembles the SQL Server connection string <em>once</em> and shares it across the whole app. A <code>private</code> constructor plus <strong>double-checked locking</strong> over a <code>volatile</code> field guarantees a single, thread-safe instance. Credentials are read from environment variables (never hardcoded) — the security rationale for centralising them here. <code>Program.cs</code> pulls <code>DatabaseConfig.Instance.ConnectionString</code> to configure EF Core.</p>
+
+    <div class="stage">
+      <svg viewBox="0 0 1180 470" role="img" aria-label="Singleton pattern class diagram">
+        <defs>
+          <marker id="arr3" markerWidth="12" markerHeight="12" refX="9" refY="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10" fill="none" stroke="#5b6675" stroke-width="1.5"/>
+          </marker>
+          <marker id="selfarr" markerWidth="12" markerHeight="12" refX="9" refY="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10" fill="none" stroke="#3b6cb0" stroke-width="1.5"/>
+          </marker>
+        </defs>
+
+        <!-- client -> singleton dependency -->
+        <line class="rel dash" x1="360" y1="150" x2="498" y2="150" marker-end="url(#arr3)"/>
+        <text class="rel-label bg" x="429" y="143" text-anchor="middle">&#171;uses&#187; .Instance</text>
+
+        <!-- self reference: Instance returns the single _instance -->
+        <path class="rel dash" d="M872,120 C950,100 950,200 874,184" fill="none" stroke="#3b6cb0" marker-end="url(#selfarr)"/>
+        <text class="rel-label" x="958" y="148">creates &amp; caches</text>
+        <text class="rel-label" x="958" y="164">itself once</text>
+
+        <!-- env vars dependency -->
+        <line class="rel dash" x1="690" y1="360" x2="690" y2="312" marker-end="url(#arr3)"/>
+        <text class="rel-label bg" x="704" y="340">reads</text>
+
+        <!-- CLIENT -->
+        <g class="box">
+          <rect class="b-client" x="60" y="90" width="300" height="130"/>
+          <text class="t-title" x="210" y="112" text-anchor="middle">Program.cs &#8212; Client</text>
+          <line class="divider" x1="60" y1="122" x2="360" y2="122"/>
+          <text class="t-mem" x="74" y="144">var cs =</text>
+          <text class="t-mem" x="74" y="162">&#160;&#160;DatabaseConfig.Instance</text>
+          <text class="t-mem" x="74" y="180">&#160;&#160;&#160;&#160;.ConnectionString;</text>
+          <text class="t-note" x="74" y="202">&#8627; configures EF Core / DbContext</text>
+        </g>
+
+        <!-- SINGLETON -->
+        <g class="box">
+          <rect class="b-concrete" x="500" y="40" width="372" height="234"/>
+          <text class="t-stereo" x="686" y="60" text-anchor="middle">&#171;singleton&#187;</text>
+          <text class="t-title" x="686" y="78" text-anchor="middle">DatabaseConfig  (sealed)</text>
+          <line class="divider" x1="500" y1="90" x2="872" y2="90"/>
+          <text class="t-mem priv" x="514" y="110">- static volatile _instance : DatabaseConfig?</text>
+          <text class="t-mem priv" x="514" y="128">- static readonly Lock : object</text>
+          <text class="t-mem" x="514" y="146">+ ConnectionString : string  { get }</text>
+          <line class="divider" x1="500" y1="162" x2="872" y2="162"/>
+          <text class="t-mem priv" x="514" y="182">- DatabaseConfig()&#160;&#160;&#171;private ctor&#187;</text>
+          <text class="t-mem" x="514" y="204">+ static Instance : DatabaseConfig</text>
+          <text class="t-note" x="528" y="220">&#8627; double-checked lock over volatile field</text>
+          <text class="t-mem priv" x="514" y="242">- static Env(key, default) : string</text>
+          <text class="t-note" x="528" y="258">&#8627; pulls DB_HOST / DB_USER / DB_PASSWORD …</text>
+        </g>
+
+        <!-- ENV VARS node -->
+        <g class="box">
+          <rect class="b-node" x="540" y="360" width="300" height="70"/>
+          <text class="t-title" x="690" y="382" text-anchor="middle">Environment Variables</text>
+          <text class="t-note" x="690" y="402" text-anchor="middle">DB_HOST · DB_PORT · DB_NAME · DB_USER</text>
+          <text class="t-note" x="690" y="418" text-anchor="middle">DB_PASSWORD · DB_TRUST_CERT</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="panels">
+      <div class="card">
+        <h3>How it works</h3>
+        <ol>
+          <li>The constructor is <code>private</code> — no one can <code>new</code> it.</li>
+          <li>First <code>Instance</code> call enters the <code>lock</code> and creates the object.</li>
+          <li><code>_instance</code> is <code>volatile</code> so all threads see it immediately.</li>
+          <li>Later calls skip the lock and return the cached instance.</li>
+          <li>The connection string is built once from env vars.</li>
+        </ol>
+      </div>
+      <div class="card example">
+        <h3>Example — double-checked lock</h3>
+<pre><span class="kw">public static</span> DatabaseConfig Instance
+{
+  <span class="kw">get</span> {
+    <span class="kw">if</span> (_instance <span class="kw">is null</span>)
+      <span class="kw">lock</span> (Lock)
+        _instance ??= <span class="kw">new</span> DatabaseConfig();
+    <span class="kw">return</span> _instance;
+  }
+}</pre>
+      </div>
+      <div class="card">
+        <h3>Benefits</h3>
+        <ul>
+          <li>One authoritative connection string for the app.</li>
+          <li>Thread-safe lazy init — built only when first needed.</li>
+          <li>Credentials centralised &amp; sourced from env vars, not code.</li>
+          <li>Faithful to the Java <code>DatabaseConnection</code> singleton.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>

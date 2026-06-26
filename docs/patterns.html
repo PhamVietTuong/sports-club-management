@@ -1,0 +1,108 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>DAO / Repository Pattern — SportsClub</title>
+<link rel="stylesheet" href="diagram.css">
+</head><body>
+<div class="wrap">
+<header class="page">
+  <p class="eyebrow">SportsClub · Design Patterns · Data Access</p>
+  <h1>DAO / Repository Pattern</h1>
+  <p class="lede">Every table is reached through exactly one repository class — the DAO layer. Controllers depend on repositories (never on EF Core directly); each repository wraps <code>AppDbContext</code> with parameterised LINQ, so SQL injection is prevented by construction. The upgrade added 9 repositories (16 total) and one shared domain service, <code>ChatDirectory</code>.</p>
+</header>
+
+<section class="pat">
+  <div class="pat-head"><h2>DAO / Repository</h2><span class="tag">structure · 16 repositories</span></div>
+  <p class="pat-intro">Controllers receive repositories by constructor injection (DI). A repository exposes intention-revealing async finders/mutators and translates them to LINQ over a <code>DbSet&lt;T&gt;</code>. <code>ChatDirectory</code> is a thin domain service that <i>composes</i> several repositories to answer "who may chat with whom", reused by both <code>ChatController</code> and <code>ChatHub</code>.</p>
+  <div class="legend"><h3>Roles</h3>
+    <div class="leg-item"><span class="swatch" style="background:var(--amber-bg);border-color:var(--amber)"></span>client (controllers)</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--blue-bg);border-color:var(--blue)"></span>DAO repository</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--violet-bg);border-color:var(--violet)"></span>domain service</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--grey-bg);border-color:var(--grey)"></span>EF Core</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--green-bg);border-color:var(--green)"></span>database</div>
+  </div>
+  <div class="stage"><svg viewBox="0 0 1120 760" role="img" aria-label="DAO pattern">
+  <defs>
+    <marker id="oarr" markerWidth="13" markerHeight="12" refX="10" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10" fill="none" stroke="#5b6675" stroke-width="1.5"/></marker>
+  </defs>
+
+  <!-- relationships -->
+  <line class="rel" x1="275" y1="158" x2="275" y2="214" marker-end="url(#oarr)"/>
+  <text class="rel-label bg" x="290" y="190">inject (DI)</text>
+  <line class="rel" x1="510" y1="100" x2="588" y2="100" marker-end="url(#oarr)"/>
+  <text class="rel-label bg" x="549" y="92" text-anchor="middle">use</text>
+  <line class="rel" x1="275" y1="436" x2="275" y2="490" marker-end="url(#oarr)"/>
+  <text class="rel-label bg" x="290" y="466">DbSet&lt;T&gt; · LINQ</text>
+  <line class="rel" x1="275" y1="600" x2="275" y2="650" marker-end="url(#oarr)"/>
+  <text class="rel-label bg" x="290" y="630">parameterised SQL</text>
+  <line class="rel" x1="820" y1="470" x2="700" y2="360" marker-end="url(#oarr)"/>
+  <text class="rel-label bg" x="775" y="420" text-anchor="middle">composes 4 repos</text>
+
+  <!-- Controllers (client) -->
+  <g class="box"><rect class="b-client" x="40" y="40" width="470" height="118" rx="7"/>
+  <text class="t-stereo" x="275" y="60" text-anchor="middle">«client»</text>
+  <text class="t-title" x="275" y="78" text-anchor="middle">Controllers (role-scoped)</text>
+  <line class="divider" x1="40" y1="88" x2="510" y2="88"/>
+  <text class="t-mem" x="54" y="106">Admin: Equipment · Payments · Members · Coaches · Classes</text>
+  <text class="t-mem" x="54" y="126">Packages · Schedules   |   CoachController · MemberController</text>
+  <text class="t-mem" x="54" y="146">ChatController · AuthController</text></g>
+
+  <!-- Repository list panel -->
+  <g class="box"><rect class="b-concrete" x="588" y="40" width="490" height="300" rx="7"/>
+  <text class="t-stereo" x="833" y="60" text-anchor="middle">«DAO» — one per table</text>
+  <text class="t-title" x="833" y="78" text-anchor="middle">Repositories (16)</text>
+  <line class="divider" x1="588" y1="88" x2="1078" y2="88"/>
+  <text class="t-mem" x="604" y="106">UserRepository</text><text class="t-mem" x="850" y="106">EquipmentRepository</text>
+  <text class="t-mem" x="604" y="128">MemberRepository</text><text class="t-mem" x="850" y="128">PaymentRepository</text>
+  <text class="t-mem" x="604" y="150">CoachRepository</text><text class="t-mem" x="850" y="150">AttendanceRepository</text>
+  <text class="t-mem" x="604" y="172">ClassRepository</text><text class="t-mem" x="850" y="172">LessonPlanRepository</text>
+  <text class="t-mem" x="604" y="194">PackageRepository</text><text class="t-mem" x="850" y="194">ProgressNoteRepository</text>
+  <text class="t-mem" x="604" y="216">ScheduleRepository</text><text class="t-mem" x="850" y="216">CoachRatingRepository</text>
+  <text class="t-mem" x="604" y="238">EnrollmentRepository</text><text class="t-mem" x="850" y="238">HealthMetricRepository</text>
+  <text class="t-mem" x="604" y="260" fill="#8190a0">— original (7) —</text><text class="t-mem" x="850" y="260">PtSessionRepository</text>
+  <text class="t-mem" x="850" y="282">MessageRepository</text>
+  <text class="t-note" x="833" y="312" text-anchor="middle">9 added by the upgrade (right column + below)</text></g>
+
+  <!-- MemberRepository representative -->
+  <g class="box"><rect class="b-concrete" x="40" y="216" width="470" height="220" rx="7"/>
+  <text class="t-stereo" x="275" y="236" text-anchor="middle">«DAO» · representative</text>
+  <text class="t-title" x="275" y="254" text-anchor="middle">MemberRepository</text>
+  <line class="divider" x1="40" y1="264" x2="510" y2="264"/>
+  <text class="t-mem" x="54" y="282">- _db : AppDbContext</text>
+  <line class="divider" x1="40" y1="292" x2="510" y2="292"/>
+  <text class="t-mem meth" x="54" y="310">+ FindAllAsync() : Task&lt;List&lt;Member&gt;&gt;</text>
+  <text class="t-mem meth" x="54" y="332">+ FindByIdAsync(id) : Task&lt;Member?&gt;</text>
+  <text class="t-mem meth" x="54" y="354">+ FindByUserIdAsync(userId)</text>
+  <text class="t-mem meth" x="54" y="376">+ FindByStatusAsync(status)</text>
+  <text class="t-mem meth" x="54" y="398">+ InsertAsync(...) · UpdateAsync(m)</text>
+  <text class="t-mem meth" x="54" y="420">+ UpdateStatusAsync(id, status)</text></g>
+
+  <!-- AppDbContext -->
+  <g class="box"><rect class="b-node" x="40" y="492" width="470" height="108" rx="7"/>
+  <text class="t-stereo" x="275" y="512" text-anchor="middle">«EF Core DbContext»</text>
+  <text class="t-title" x="275" y="530" text-anchor="middle">AppDbContext</text>
+  <line class="divider" x1="40" y1="540" x2="510" y2="540"/>
+  <text class="t-mem" x="54" y="558">+ DbSet&lt;T&gt; for all 17 entities</text>
+  <text class="t-mem" x="54" y="580">OnModelCreating → maps snake_case tables/columns</text></g>
+
+  <!-- SQL Server -->
+  <g class="box"><rect class="b-iface" x="40" y="650" width="470" height="70" rx="7"/>
+  <text class="t-title" x="275" y="678" text-anchor="middle">SQL Server · SportsClubDB</text>
+  <text class="t-note" x="275" y="700" text-anchor="middle">17 tables — see ERD</text></g>
+
+  <!-- ChatDirectory service -->
+  <g class="box"><rect class="b-violet" x="588" y="460" width="490" height="120" rx="7"/>
+  <text class="t-stereo" x="833" y="480" text-anchor="middle">«domain service»</text>
+  <text class="t-title" x="833" y="498" text-anchor="middle">ChatDirectory</text>
+  <line class="divider" x1="588" y1="508" x2="1078" y2="508"/>
+  <text class="t-mem meth" x="604" y="526">+ ContactsAsync(user) : List&lt;ChatContactInfo&gt;</text>
+  <text class="t-mem meth" x="604" y="548">+ CanChatAsync(user, otherUserId) : bool</text>
+  <text class="t-note" x="604" y="570">shared by ChatController (REST) + ChatHub (SignalR)</text></g>
+
+  <!-- note: security -->
+  <g class="box"><rect class="note" x="588" y="600" width="490" height="120"/>
+  <text class="note-t" x="608" y="624">Security invariant</text>
+  <text class="note-t" x="608" y="646">EF Core parameterises every LINQ query — values are never</text>
+  <text class="note-t" x="608" y="666">concatenated into SQL, so injection is prevented by construction.</text>
+  <text class="note-t" x="608" y="694">Connection string built once by the Singleton DatabaseConfig.</text></g>
+  </svg></div>
+</section>
+</div></body></html>

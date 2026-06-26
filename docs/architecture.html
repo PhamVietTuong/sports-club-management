@@ -1,0 +1,159 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Architecture &amp; Real-time Chat — SportsClub</title>
+<link rel="stylesheet" href="diagram.css">
+</head><body>
+<div class="wrap">
+<header class="page">
+  <p class="eyebrow">SportsClub · System Architecture · ASP.NET Core 9 + React 18</p>
+  <h1>Architecture &amp; Real-time Chat</h1>
+  <p class="lede">How a request flows from the React SPA through the role-scoped Web API, the DAO repositories and EF Core to SQL Server — plus the SignalR path that powers live coach&nbsp;↔&nbsp;member chat over a WebSocket.</p>
+</header>
+
+<section class="pat">
+  <div class="pat-head"><h2>System Architecture</h2><span class="tag">layered · stateless JWT</span></div>
+  <p class="pat-intro">Two transports reach the backend: ordinary <b>REST</b> calls (JSON + <code>Authorization: Bearer</code>) and a <b>SignalR WebSocket</b> for chat (JWT passed as <code>?access_token</code> because browsers can't set headers on a socket). Both share the same auth, the same repositories and the same EF Core context. The connection string is built once by the <b>Singleton</b> <code>DatabaseConfig</code>.</p>
+  <div class="legend"><h3>Transport</h3>
+    <div class="leg-item"><span class="swatch" style="background:var(--blue-bg);border-color:var(--blue)"></span>REST (JSON + JWT header)</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--violet-bg);border-color:var(--violet)"></span>SignalR WebSocket</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--green-bg);border-color:var(--green)"></span>data store</div>
+  </div>
+  <div class="stage"><svg viewBox="0 0 1240 560" role="img" aria-label="Architecture">
+  <defs>
+    <marker id="ah" markerWidth="12" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#5b6675"/></marker>
+    <marker id="ahv" markerWidth="12" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#7e57c2"/></marker>
+  </defs>
+
+  <!-- React SPA -->
+  <rect class="arch-box" x="40" y="190" width="210" height="180" fill="var(--blue-bg)" stroke="var(--blue)"/>
+  <text class="arch-t" x="145" y="216" text-anchor="middle" fill="var(--blue)">React SPA</text>
+  <text class="arch-s" x="145" y="240" text-anchor="middle">Vite · TypeScript</text>
+  <text class="arch-s" x="145" y="262" text-anchor="middle">pages by role</text>
+  <text class="arch-s" x="145" y="284" text-anchor="middle">axios (JWT header)</text>
+  <text class="arch-s" x="145" y="306" text-anchor="middle">@microsoft/signalr</text>
+  <text class="arch-s" x="145" y="334" text-anchor="middle">localStorage token</text>
+
+  <!-- pipeline bar -->
+  <rect class="note" x="330" y="40" width="540" height="30"/>
+  <text class="note-t" x="600" y="60" text-anchor="middle">Middleware pipeline · SecurityHeaders → CORS → RateLimiter → Authentication → Authorization</text>
+
+  <!-- API controllers -->
+  <rect class="arch-box" x="330" y="110" width="250" height="150" fill="var(--blue-bg)" stroke="var(--blue)"/>
+  <text class="arch-t" x="455" y="136" text-anchor="middle" fill="var(--blue)">Web API controllers</text>
+  <text class="arch-s" x="455" y="160" text-anchor="middle">/api/admin/*   [ADMIN]</text>
+  <text class="arch-s" x="455" y="182" text-anchor="middle">/api/coach/*   [COACH]</text>
+  <text class="arch-s" x="455" y="204" text-anchor="middle">/api/member/* [MEMBER]</text>
+  <text class="arch-s" x="455" y="226" text-anchor="middle">/api/auth/*    [public]</text>
+  <text class="arch-s" x="455" y="248" text-anchor="middle">/api/chat/*    history</text>
+
+  <!-- ChatHub -->
+  <rect class="arch-box" x="330" y="320" width="250" height="100" fill="var(--violet-bg)" stroke="var(--violet)"/>
+  <text class="arch-t" x="455" y="346" text-anchor="middle" fill="var(--violet)">ChatHub (SignalR)</text>
+  <text class="arch-s" x="455" y="370" text-anchor="middle">/hubs/chat</text>
+  <text class="arch-s" x="455" y="392" text-anchor="middle">SendMessage()</text>
+  <text class="arch-s" x="455" y="412" text-anchor="middle">→ ReceiveMessage event</text>
+
+  <!-- Repositories -->
+  <rect class="arch-box" x="660" y="170" width="210" height="190" fill="var(--amber-bg)" stroke="var(--amber)"/>
+  <text class="arch-t" x="765" y="196" text-anchor="middle" fill="var(--amber)">Repositories (DAO)</text>
+  <text class="arch-s" x="765" y="220" text-anchor="middle">one per table</text>
+  <text class="arch-s" x="765" y="242" text-anchor="middle">parameterised LINQ</text>
+  <text class="arch-s" x="765" y="270" text-anchor="middle">ChatDirectory</text>
+  <text class="arch-s" x="765" y="290" text-anchor="middle">(shared chat authz)</text>
+  <text class="arch-s" x="765" y="318" text-anchor="middle">AccountService</text>
+
+  <!-- EF Core -->
+  <rect class="arch-box" x="930" y="200" width="110" height="130" fill="#fff" stroke="#8a93a0"/>
+  <text class="arch-t" x="985" y="252" text-anchor="middle" fill="#5b6675">EF Core 9</text>
+  <text class="arch-s" x="985" y="276" text-anchor="middle">AppDbContext</text>
+
+  <!-- SQL Server -->
+  <rect class="arch-box" x="1090" y="190" width="120" height="150" fill="var(--green-bg)" stroke="var(--green)"/>
+  <text class="arch-t" x="1150" y="246" text-anchor="middle" fill="var(--green)">SQL Server</text>
+  <text class="arch-s" x="1150" y="270" text-anchor="middle">17 tables</text>
+  <text class="arch-s" x="1150" y="292" text-anchor="middle">SportsClubDB</text>
+
+  <!-- flows -->
+  <path class="flow" d="M250,250 L330,200" marker-end="url(#ah)"/>
+  <text class="flow-t" x="290" y="214" text-anchor="middle">REST</text>
+  <path class="flow ws" d="M250,320 L330,360" marker-end="url(#ahv)"/>
+  <text class="flow-t" x="288" y="358" text-anchor="middle" fill="var(--violet)">WebSocket</text>
+
+  <path class="flow" d="M580,185 L660,210" marker-end="url(#ah)"/>
+  <path class="flow" d="M580,375 C620,375 630,300 660,290" marker-end="url(#ah)"/>
+  <text class="flow-t" x="612" y="345">MessageRepository</text>
+  <path class="flow" d="M870,260 L930,262" marker-end="url(#ah)"/>
+  <path class="flow" d="M1040,265 L1090,265" marker-end="url(#ah)"/>
+
+  <!-- singleton note -->
+  <rect class="note" x="930" y="360" width="280" height="30"/>
+  <text class="note-t" x="1070" y="380" text-anchor="middle">Singleton DatabaseConfig builds the connection string once</text>
+  </svg></div>
+</section>
+
+<section class="pat">
+  <div class="pat-head"><h2>Real-time Chat — Sequence</h2><span class="tag">SignalR · send + push</span></div>
+  <p class="pat-intro">Sending one message: the member's client <b>invokes</b> the hub over the open socket; the hub authorizes via <code>ChatDirectory</code>, persists through <code>MessageRepository</code>, then <b>pushes</b> a <code>ReceiveMessage</code> event to the recipient and echoes it back to the sender. No polling — each client just reacts to the event.</p>
+  <div class="stage"><svg viewBox="0 0 1240 600" role="img" aria-label="Chat sequence">
+  <defs>
+    <marker id="sa" markerWidth="12" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#3b4654"/></marker>
+    <marker id="sar" markerWidth="12" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#7a8493"/></marker>
+  </defs>
+
+  <!-- lifeline heads -->
+  <g>
+    <rect class="actor" x="40" y="30" width="170" height="52"/><text class="actor-t" x="125" y="52" text-anchor="middle">Member SPA</text><text class="actor-s" x="125" y="70" text-anchor="middle">browser A</text>
+    <rect class="actor hub" x="320" y="30" width="160" height="52"/><text class="actor-t" x="400" y="52" text-anchor="middle">ChatHub</text><text class="actor-s" x="400" y="70" text-anchor="middle">SignalR</text>
+    <rect class="actor" x="560" y="30" width="160" height="52"/><text class="actor-t" x="640" y="52" text-anchor="middle">ChatDirectory</text><text class="actor-s" x="640" y="70" text-anchor="middle">authz</text>
+    <rect class="actor db" x="800" y="30" width="190" height="52"/><text class="actor-t" x="895" y="49" text-anchor="middle">MessageRepository</text><text class="actor-s" x="895" y="68" text-anchor="middle">EF Core → SQL Server</text>
+    <rect class="actor" x="1060" y="30" width="150" height="52"/><text class="actor-t" x="1135" y="52" text-anchor="middle">Coach SPA</text><text class="actor-s" x="1135" y="70" text-anchor="middle">browser B</text>
+  </g>
+  <!-- lifelines -->
+  <line class="lifeline" x1="125" y1="82" x2="125" y2="560"/>
+  <line class="lifeline" x1="400" y1="82" x2="400" y2="560"/>
+  <line class="lifeline" x1="640" y1="82" x2="640" y2="560"/>
+  <line class="lifeline" x1="895" y1="82" x2="895" y2="560"/>
+  <line class="lifeline" x1="1135" y1="82" x2="1135" y2="560"/>
+
+  <!-- 1 invoke -->
+  <text class="msg-n" x="130" y="120">1</text>
+  <path class="msg" d="M125,130 L400,130" marker-end="url(#sa)"/>
+  <text class="msg-t" x="262" y="123" text-anchor="middle">invoke SendMessage(coachUserId, body)  · WebSocket</text>
+
+  <!-- 2 authorize -->
+  <text class="msg-n" x="405" y="170">2</text>
+  <path class="msg" d="M400,180 L640,180" marker-end="url(#sa)"/>
+  <text class="msg-t" x="520" y="173" text-anchor="middle">CanChatAsync(user, recipient)</text>
+  <path class="msg ret" d="M640,212 L400,212" marker-end="url(#sar)"/>
+  <text class="msg-t" x="520" y="205" text-anchor="middle">shares an active class ✓</text>
+
+  <!-- note: reject -->
+  <rect class="note" x="300" y="228" width="220" height="28"/>
+  <text class="note-t" x="410" y="246" text-anchor="middle">else → HubException (403-equivalent)</text>
+
+  <!-- 3 persist -->
+  <text class="msg-n" x="405" y="292">3</text>
+  <path class="msg" d="M400,302 L895,302" marker-end="url(#sa)"/>
+  <text class="msg-t" x="640" y="295" text-anchor="middle">SendAsync(sender, recipient, body)  →  INSERT messages</text>
+  <path class="msg ret" d="M895,334 L400,334" marker-end="url(#sar)"/>
+  <text class="msg-t" x="640" y="327" text-anchor="middle">saved Message (id, sentAt)</text>
+
+  <!-- 4 push to recipient -->
+  <text class="msg-n" x="405" y="384">4</text>
+  <path class="msg" d="M400,394 L1135,394" marker-end="url(#sa)"/>
+  <text class="msg-t" x="760" y="387" text-anchor="middle">Clients.User(coachUserId).ReceiveMessage(payload)</text>
+
+  <!-- 5 echo to sender -->
+  <text class="msg-n" x="130" y="444">5</text>
+  <path class="msg" d="M400,454 L125,454" marker-end="url(#sa)"/>
+  <text class="msg-t" x="262" y="447" text-anchor="middle">Clients.Caller.ReceiveMessage(payload) — echo</text>
+
+  <!-- 6 ui update -->
+  <rect class="note" x="40" y="486" width="370" height="44"/>
+  <text class="note-t" x="225" y="505" text-anchor="middle">6 · on ReceiveMessage each client computes</text>
+  <text class="note-t" x="225" y="521" text-anchor="middle">mine = senderUserId === myUserId, then refreshes the thread</text>
+  <rect class="note" x="965" y="486" width="245" height="44"/>
+  <text class="note-t" x="1087" y="505" text-anchor="middle">recipient's unread badge updates;</text>
+  <text class="note-t" x="1087" y="521" text-anchor="middle">history still loaded over REST</text>
+  </svg></div>
+</section>
+</div></body></html>

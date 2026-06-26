@@ -1,0 +1,189 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Class Diagram — upgrade module entities — SportsClub</title>
+<link rel="stylesheet" href="diagram.css">
+</head><body>
+<div class="wrap">
+<header class="page">
+  <p class="eyebrow">SportsClub · Domain Model · C# · EF Core 9</p>
+  <h1>Class Diagram — upgrade module entities</h1>
+  <p class="lede">The 9 entity classes added by the upgrade (red), with their C# property types and navigation properties. Hub entities (<b>User</b>, <b>Member</b>, <b>Coach</b>, <b>TrainingClass</b>) are shown compact for reference — <code>Coach</code> gained a <b>Status</b> property. Unlike the core entities, these modules are plain POCOs (no <code>Clone()</code> — they aren't Prototypes). Dashed open arrows are <code>«nav»</code> associations.</p>
+</header>
+
+<section class="pat">
+  <div class="pat-head"><h2>Module entities</h2><span class="tag">9 classes · C#</span></div>
+  <p class="pat-intro">FK ids are stored as plain <code>int</code> fields; EF Core exposes the related row through the <code>«nav»</code> reference. <code>Message</code> holds two navigations into <code>User</code> (Sender + Recipient); <code>Equipment</code> and <code>HealthMetric</code> have none.</p>
+  <div class="legend"><h3>Roles</h3>
+    <div class="leg-item"><span class="swatch" style="background:var(--blue-bg);border-color:var(--blue)"></span>hub entity (reference)</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--red-bg);border-color:var(--red)"></span>upgrade module entity</div>
+    <div class="leg-item"><span style="font-family:monospace;font-size:11px">«nav»</span> navigation property</div>
+  </div>
+  <div class="stage"><svg viewBox="0 0 1500 1010" role="img" aria-label="Class modules">
+  <defs>
+    <marker id="oarr" markerWidth="13" markerHeight="12" refX="11" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10" fill="none" stroke="#7a8493" stroke-width="1.5"/></marker>
+  </defs>
+
+  <!-- ===== nav associations (under boxes) ===== -->
+  <!-- Message -> User -->
+  <path class="rel dash" d="M200,238 L200,150" marker-end="url(#oarr)"/><text class="rel-label bg" x="214" y="200">2× «nav»</text>
+  <!-- Payment -> Member -->
+  <path class="rel dash" d="M560,238 L600,150" marker-end="url(#oarr)"/>
+  <!-- Attendance -> Member -->
+  <path class="rel dash" d="M800,238 L640,152" marker-end="url(#oarr)"/>
+  <!-- Attendance -> TrainingClass -->
+  <path class="rel dash" d="M920,238 L1300,152" marker-end="url(#oarr)"/>
+  <!-- LessonPlan -> TrainingClass -->
+  <path class="rel dash" d="M1280,238 L1340,150" marker-end="url(#oarr)"/>
+  <!-- CoachRating -> Member (left outer gutter) -->
+  <path class="rel dash" d="M40,560 L22,560 L22,128 L540,128" marker-end="url(#oarr)"/><text class="rel-label bg" x="120" y="120">CoachRating.Member</text>
+  <!-- CoachRating -> Coach (up gutter x=378) -->
+  <path class="rel dash" d="M360,600 L378,600 L378,150 L960,150" marker-end="url(#oarr)"/>
+  <!-- ProgressNote -> Member (gutter x=742) -->
+  <path class="rel dash" d="M400,600 L742,600 L742,170 L760,160" marker-end="url(#oarr)"/>
+  <!-- PtSession -> Coach (vertical to coach bottom) -->
+  <path class="rel dash" d="M900,560 L900,300 L960,160" marker-end="url(#oarr)"/>
+  <!-- PtSession -> Member (gutter x=748) -->
+  <path class="rel dash" d="M760,640 L748,640 L748,176 L740,168" marker-end="url(#oarr)"/>
+  <!-- HealthMetric -> Member (right gutter x=1098) -->
+  <path class="rel dash" d="M1120,560 L1098,560 L1098,140 L740,140" marker-end="url(#oarr)"/>
+
+  <!-- ===== HUB ANCHORS (row y=40) ===== -->
+  <g class="box"><rect class="b-concrete" x="80" y="40" width="220" height="92"/>
+  <text class="t-stereo" x="190" y="58" text-anchor="middle">«hub»</text><text class="t-title" x="190" y="76" text-anchor="middle">User</text>
+  <line class="divider" x1="80" y1="86" x2="300" y2="86"/>
+  <text class="t-mem" x="92" y="104">+ Id : int</text><text class="t-mem" x="92" y="124">+ Role : string</text></g>
+
+  <g class="box"><rect class="b-concrete" x="520" y="40" width="220" height="92"/>
+  <text class="t-stereo" x="630" y="58" text-anchor="middle">«hub»</text><text class="t-title" x="630" y="76" text-anchor="middle">Member</text>
+  <line class="divider" x1="520" y1="86" x2="740" y2="86"/>
+  <text class="t-mem" x="532" y="104">+ Id : int</text><text class="t-mem" x="532" y="124">+ FullName : string</text></g>
+
+  <g class="box"><rect class="b-concrete" x="960" y="40" width="220" height="114"/>
+  <text class="t-stereo" x="1070" y="58" text-anchor="middle">«hub · +Status»</text><text class="t-title" x="1070" y="76" text-anchor="middle">Coach</text>
+  <line class="divider" x1="960" y1="86" x2="1180" y2="86"/>
+  <text class="t-mem" x="972" y="104">+ Id : int</text><text class="t-mem" x="972" y="124">+ FullName : string</text>
+  <text class="t-mem meth" x="972" y="146">+ Status : string  ◄ new</text></g>
+
+  <g class="box"><rect class="b-concrete" x="1240" y="40" width="230" height="92"/>
+  <text class="t-stereo" x="1355" y="58" text-anchor="middle">«hub»</text><text class="t-title" x="1355" y="76" text-anchor="middle">TrainingClass</text>
+  <line class="divider" x1="1240" y1="86" x2="1470" y2="86"/>
+  <text class="t-mem" x="1252" y="104">+ Id : int</text><text class="t-mem" x="1252" y="124">+ CoachId : int?</text></g>
+
+  <!-- ===== ROW 1 (y=240) ===== -->
+  <!-- Message -->
+  <g class="box"><rect class="b-mod" x="40" y="240" width="320" height="216"/>
+  <text class="t-stereo" x="200" y="258" text-anchor="middle">«entity»</text><text class="t-title" x="200" y="276" text-anchor="middle">Message</text>
+  <line class="divider" x1="40" y1="286" x2="360" y2="286"/>
+  <text class="t-mem" x="52" y="304">+ Id : int</text>
+  <text class="t-mem" x="52" y="324">+ SenderUserId : int</text>
+  <text class="t-mem" x="52" y="344">+ RecipientUserId : int</text>
+  <text class="t-mem" x="52" y="364">+ Body : string</text>
+  <text class="t-mem" x="52" y="384">+ SentAt : DateTime</text>
+  <text class="t-mem" x="52" y="404">+ IsRead : bool</text>
+  <text class="t-mem meth" x="52" y="426">+ Sender : User  «nav»</text>
+  <text class="t-mem meth" x="52" y="446">+ Recipient : User  «nav»</text></g>
+
+  <!-- Payment -->
+  <g class="box"><rect class="b-mod" x="400" y="240" width="320" height="236"/>
+  <text class="t-stereo" x="560" y="258" text-anchor="middle">«entity»</text><text class="t-title" x="560" y="276" text-anchor="middle">Payment</text>
+  <line class="divider" x1="400" y1="286" x2="720" y2="286"/>
+  <text class="t-mem" x="412" y="304">+ Id : int</text>
+  <text class="t-mem" x="412" y="324">+ MemberId : int</text>
+  <text class="t-mem" x="412" y="344">+ PackageId : int?</text>
+  <text class="t-mem" x="412" y="364">+ Amount : decimal</text>
+  <text class="t-mem" x="412" y="384">+ Method : string</text>
+  <text class="t-mem" x="412" y="404">+ Status : string</text>
+  <text class="t-mem" x="412" y="424">+ Description : string?</text>
+  <text class="t-mem" x="412" y="444">+ PaidAt : DateTime</text>
+  <text class="t-mem meth" x="412" y="466">+ Member : Member  «nav»</text></g>
+
+  <!-- Attendance -->
+  <g class="box"><rect class="b-mod" x="760" y="240" width="320" height="216"/>
+  <text class="t-stereo" x="920" y="258" text-anchor="middle">«entity»</text><text class="t-title" x="920" y="276" text-anchor="middle">Attendance</text>
+  <line class="divider" x1="760" y1="286" x2="1080" y2="286"/>
+  <text class="t-mem" x="772" y="304">+ Id : int</text>
+  <text class="t-mem" x="772" y="324">+ ClassId : int</text>
+  <text class="t-mem" x="772" y="344">+ MemberId : int</text>
+  <text class="t-mem" x="772" y="364">+ SessionDate : DateOnly</text>
+  <text class="t-mem" x="772" y="384">+ Status : string</text>
+  <text class="t-mem" x="772" y="404">+ CheckedInAt : DateTime?</text>
+  <text class="t-mem meth" x="772" y="426">+ Member : Member  «nav»</text>
+  <text class="t-mem meth" x="772" y="446">+ Class : TrainingClass  «nav»</text></g>
+
+  <!-- LessonPlan -->
+  <g class="box"><rect class="b-mod" x="1120" y="240" width="340" height="194"/>
+  <text class="t-stereo" x="1290" y="258" text-anchor="middle">«entity»</text><text class="t-title" x="1290" y="276" text-anchor="middle">LessonPlan</text>
+  <line class="divider" x1="1120" y1="286" x2="1460" y2="286"/>
+  <text class="t-mem" x="1132" y="304">+ Id : int</text>
+  <text class="t-mem" x="1132" y="324">+ ClassId : int</text>
+  <text class="t-mem" x="1132" y="344">+ CoachId : int</text>
+  <text class="t-mem" x="1132" y="364">+ Title : string</text>
+  <text class="t-mem" x="1132" y="384">+ Content : string?</text>
+  <text class="t-mem" x="1132" y="404">+ CreatedAt : DateTime</text>
+  <text class="t-mem meth" x="1132" y="426">+ Class : TrainingClass  «nav»</text></g>
+
+  <!-- ===== ROW 2 (y=560) ===== -->
+  <!-- CoachRating -->
+  <g class="box"><rect class="b-mod" x="40" y="560" width="320" height="172"/>
+  <text class="t-stereo" x="200" y="578" text-anchor="middle">«entity»</text><text class="t-title" x="200" y="596" text-anchor="middle">CoachRating</text>
+  <line class="divider" x1="40" y1="606" x2="360" y2="606"/>
+  <text class="t-mem" x="52" y="624">+ Id : int</text>
+  <text class="t-mem" x="52" y="644">+ MemberId : int</text>
+  <text class="t-mem" x="52" y="664">+ CoachId : int</text>
+  <text class="t-mem" x="52" y="684">+ Rating : int</text>
+  <text class="t-mem" x="52" y="704">+ Comment : string?</text>
+  <text class="t-mem meth" x="52" y="726">+ Member : Member  «nav»</text></g>
+
+  <!-- ProgressNote -->
+  <g class="box"><rect class="b-mod" x="400" y="560" width="320" height="194"/>
+  <text class="t-stereo" x="560" y="578" text-anchor="middle">«entity»</text><text class="t-title" x="560" y="596" text-anchor="middle">ProgressNote</text>
+  <line class="divider" x1="400" y1="606" x2="720" y2="606"/>
+  <text class="t-mem" x="412" y="624">+ Id : int</text>
+  <text class="t-mem" x="412" y="644">+ MemberId : int</text>
+  <text class="t-mem" x="412" y="664">+ CoachId : int</text>
+  <text class="t-mem" x="412" y="684">+ ClassId : int?</text>
+  <text class="t-mem" x="412" y="704">+ Note : string</text>
+  <text class="t-mem" x="412" y="724">+ Rating : int?</text>
+  <text class="t-mem meth" x="412" y="746">+ Member : Member  «nav»</text></g>
+
+  <!-- PtSession -->
+  <g class="box"><rect class="b-mod" x="760" y="560" width="320" height="260"/>
+  <text class="t-stereo" x="920" y="578" text-anchor="middle">«entity»</text><text class="t-title" x="920" y="596" text-anchor="middle">PtSession</text>
+  <line class="divider" x1="760" y1="606" x2="1080" y2="606"/>
+  <text class="t-mem" x="772" y="624">+ Id : int</text>
+  <text class="t-mem" x="772" y="644">+ MemberId : int</text>
+  <text class="t-mem" x="772" y="664">+ CoachId : int</text>
+  <text class="t-mem" x="772" y="684">+ SessionDate : DateOnly</text>
+  <text class="t-mem" x="772" y="704">+ StartTime : TimeOnly</text>
+  <text class="t-mem" x="772" y="724">+ EndTime : TimeOnly</text>
+  <text class="t-mem" x="772" y="744">+ Status : string</text>
+  <text class="t-mem" x="772" y="764">+ Notes : string?</text>
+  <text class="t-mem meth" x="772" y="786">+ Member : Member  «nav»</text>
+  <text class="t-mem meth" x="772" y="806">+ Coach : Coach  «nav»</text></g>
+
+  <!-- HealthMetric -->
+  <g class="box"><rect class="b-mod" x="1120" y="560" width="340" height="216"/>
+  <text class="t-stereo" x="1290" y="578" text-anchor="middle">«entity»</text><text class="t-title" x="1290" y="596" text-anchor="middle">HealthMetric</text>
+  <line class="divider" x1="1120" y1="606" x2="1460" y2="606"/>
+  <text class="t-mem" x="1132" y="624">+ Id : int</text>
+  <text class="t-mem" x="1132" y="644">+ MemberId : int</text>
+  <text class="t-mem" x="1132" y="664">+ RecordedDate : DateOnly</text>
+  <text class="t-mem" x="1132" y="684">+ WeightKg : decimal?</text>
+  <text class="t-mem" x="1132" y="704">+ HeightCm : decimal?</text>
+  <text class="t-mem" x="1132" y="724">+ BodyFatPct : decimal?</text>
+  <text class="t-mem" x="1132" y="744">+ Notes : string?</text>
+  <text class="t-mem" x="1132" y="764">+ CreatedAt : DateTime</text></g>
+
+  <!-- Equipment (standalone) -->
+  <g class="box"><rect class="b-mod" x="40" y="800" width="340" height="194"/>
+  <text class="t-stereo" x="210" y="818" text-anchor="middle">«entity · no nav»</text><text class="t-title" x="210" y="836" text-anchor="middle">Equipment</text>
+  <line class="divider" x1="40" y1="846" x2="380" y2="846"/>
+  <text class="t-mem" x="52" y="864">+ Id : int</text>
+  <text class="t-mem" x="52" y="884">+ Name : string</text>
+  <text class="t-mem" x="52" y="904">+ Category : string?</text>
+  <text class="t-mem" x="52" y="924">+ Quantity : int</text>
+  <text class="t-mem" x="52" y="944">+ Status : string</text>
+  <text class="t-mem" x="52" y="964">+ PurchaseDate : DateOnly?</text>
+  <text class="t-mem" x="52" y="984">+ Notes : string?</text></g>
+  </svg></div>
+</section>
+</div></body></html>

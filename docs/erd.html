@@ -1,0 +1,285 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>ERD (full schema) — SportsClub</title>
+<link rel="stylesheet" href="diagram.css">
+</head><body>
+<div class="wrap">
+<header class="page">
+  <p class="eyebrow">SportsClub · Data Model · SQL Server + EF Core 9</p>
+  <h1>Entity Relationship Diagram — full schema</h1>
+  <p class="lede">All <b>17 tables</b> after the upgrade: the original 8 (auth, profiles, scheduling, enrollment) plus the 9 module tables (drawn in <b style="color:#c0504d">red</b>). Crow's-foot marks the "many"/child (FK) side; a bar marks the "one"/parent side. Two value-only references with no FK constraint are dashed.</p>
+</header>
+
+<section class="pat">
+  <div class="pat-head"><h2>ERD</h2><span class="tag">17 tables · physical schema</span></div>
+  <p class="pat-intro">The hubs <b>users</b>, <b>members</b>, <b>coaches</b> and <b>training_classes</b> sit on the central spine; module tables hang off whichever hub(s) they reference. <code>members.package_id</code> and <code>login_attempts.username</code> are by-value only (dashed, "no FK"). <code>messages</code> has two FKs into <code>users</code> (sender + recipient); <code>training_classes.coach_id</code> is nullable so a class can be unassigned (claimable).</p>
+  <div class="legend"><h3>Tables</h3>
+    <div class="leg-item"><span class="swatch" style="background:var(--green);border-color:var(--green)"></span>auth / scheduling</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--blue);border-color:var(--blue)"></span>core profiles</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--amber);border-color:var(--amber)"></span>enrollment</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--violet);border-color:var(--violet)"></span>packages</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--grey);border-color:var(--grey)"></span>security log</div>
+    <div class="leg-item"><span class="swatch" style="background:var(--red);border-color:var(--red)"></span>upgrade modules</div>
+    <div class="leg-item"><b style="color:#b8860b;font-size:11px">PK</b> primary key &nbsp; <b style="color:#3b6cb0;font-size:11px">FK</b> foreign key &nbsp; <span style="font-family:monospace">U</span> unique</div>
+  </div>
+  <div class="stage"><svg viewBox="0 0 1800 1340" role="img" aria-label="ERD">
+  <defs>
+    <marker id="crow" markerWidth="16" markerHeight="14" refX="14" refY="7" orient="auto"><path d="M0,7 L14,1 M0,7 L14,7 M0,7 L14,13" fill="none" stroke="#5b6675" stroke-width="1.5"/></marker>
+    <marker id="bar" markerWidth="12" markerHeight="14" refX="8" refY="7" orient="auto"><path d="M7,1 L7,13" stroke="#5b6675" stroke-width="1.6"/></marker>
+  </defs>
+
+  <!-- ===================== RELATIONSHIPS (drawn first, under boxes) ===================== -->
+  <!-- members -> users -->
+  <path class="rel" d="M540,300 L820,206" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- coaches -> users -->
+  <path class="rel" d="M1280,300 L940,206" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- messages -> users (2 FK) -->
+  <path class="rel" d="M1500,110 L1060,120" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <text class="rel-label bg" x="1280" y="100" text-anchor="middle">sender + recipient</text>
+  <!-- login_attempts -> users (no FK) -->
+  <path class="rel dash" d="M1500,300 L1062,176" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <text class="rel-label bg" x="1300" y="250" text-anchor="middle">username · no FK</text>
+  <!-- members.package_id -> training_packages (no FK) -->
+  <path class="rel dash" d="M390,470 L332,160" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <text class="rel-label bg" x="368" y="330" text-anchor="middle">no FK</text>
+  <!-- payments -> members -->
+  <path class="rel" d="M332,540 L390,476" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- health_metrics -> members -->
+  <path class="rel" d="M332,780 L390,520" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- enrollments -> members -->
+  <path class="rel" d="M540,600 L540,534" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- enrollments -> training_classes -->
+  <path class="rel" d="M690,648 L760,420" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- attendance -> members (route around left) -->
+  <path class="rel" d="M408,800 L408,540 L390,520" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- attendance -> training_classes -->
+  <path class="rel" d="M690,848 L760,468" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- progress_notes -> members -->
+  <path class="rel" d="M760,680 L690,476" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- progress_notes -> coaches -->
+  <path class="rel" d="M1060,680 L1130,476" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- progress_notes -> training_classes -->
+  <path class="rel" d="M910,620 L910,518" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- schedules -> training_classes (route around left) -->
+  <path class="rel" d="M760,912 L744,912 L744,500 L760,500" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- coach_ratings -> members (left vertical at x=716) -->
+  <path class="rel" d="M760,1175 L716,1175 L716,478 L690,478" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- coach_ratings -> coaches (vertical at x=1112) -->
+  <path class="rel" d="M1060,1175 L1112,1175 L1112,470 L1130,470" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- lesson_plans -> training_classes -->
+  <path class="rel" d="M1130,660 L1060,470" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- lesson_plans -> coaches -->
+  <path class="rel" d="M1280,620 L1280,518" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- pt_sessions -> coaches (right vertical x=1448) -->
+  <path class="rel" d="M1430,866 L1448,866 L1448,470 L1430,488" marker-start="url(#crow)" marker-end="url(#bar)"/>
+  <!-- pt_sessions -> members (bottom route x=702) -->
+  <path class="rel" d="M1130,952 L702,952 L702,524 L690,524" marker-start="url(#crow)" marker-end="url(#bar)"/>
+
+  <!-- ===================== TABLES ===================== -->
+  <!-- users (C3) -->
+  <g class="box"><rect class="erd-h erd-iface" x="760" y="40" width="300" height="30"/><rect class="erd-b" x="760" y="70" width="300" height="166"/>
+  <text class="erd-title" x="910" y="60" text-anchor="middle">users</text>
+  <text class="erd-tag pk" x="772" y="92">PK</text><text class="erd-col pkname" x="806" y="92">id</text><text class="erd-type" x="1048" y="92" text-anchor="end">INT</text>
+  <line class="erd-div" x1="760" y1="100" x2="1060" y2="100"/>
+  <text class="erd-col" x="806" y="114">username</text><text class="erd-type" x="1048" y="114" text-anchor="end">NVARCHAR(50) U</text>
+  <text class="erd-col" x="806" y="136">password_hash</text><text class="erd-type" x="1048" y="136" text-anchor="end">NVARCHAR(255)</text>
+  <text class="erd-col" x="806" y="158">email</text><text class="erd-type" x="1048" y="158" text-anchor="end">NVARCHAR(100) U</text>
+  <text class="erd-col" x="806" y="180">phone</text><text class="erd-type" x="1048" y="180" text-anchor="end">NVARCHAR(20)</text>
+  <text class="erd-col" x="806" y="202">role</text><text class="erd-type" x="1048" y="202" text-anchor="end">NVARCHAR(10)</text>
+  <text class="erd-col" x="806" y="224">created_at</text><text class="erd-type" x="1048" y="224" text-anchor="end">DATETIME2</text></g>
+
+  <!-- training_packages (C1) -->
+  <g class="box"><rect class="erd-h erd-bcl" x="40" y="40" width="290" height="30"/><rect class="erd-b" x="40" y="70" width="290" height="166"/>
+  <text class="erd-title" x="185" y="60" text-anchor="middle">training_packages</text>
+  <text class="erd-tag pk" x="52" y="92">PK</text><text class="erd-col pkname" x="86" y="92">id</text><text class="erd-type" x="318" y="92" text-anchor="end">INT</text>
+  <line class="erd-div" x1="40" y1="100" x2="330" y2="100"/>
+  <text class="erd-col" x="86" y="114">name</text><text class="erd-type" x="318" y="114" text-anchor="end">NVARCHAR(100)</text>
+  <text class="erd-col" x="86" y="136">duration_months</text><text class="erd-type" x="318" y="136" text-anchor="end">INT</text>
+  <text class="erd-col" x="86" y="158">price</text><text class="erd-type" x="318" y="158" text-anchor="end">DECIMAL(12,2)</text>
+  <text class="erd-col" x="86" y="180">max_classes</text><text class="erd-type" x="318" y="180" text-anchor="end">INT</text>
+  <text class="erd-col" x="86" y="202">description</text><text class="erd-type" x="318" y="202" text-anchor="end">NVARCHAR(MAX)</text>
+  <text class="erd-col" x="86" y="224">is_active</text><text class="erd-type" x="318" y="224" text-anchor="end">BIT</text></g>
+
+  <!-- equipment (C1) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="40" y="250" width="290" height="30"/><rect class="erd-b" x="40" y="280" width="290" height="166"/>
+  <text class="erd-title" x="185" y="270" text-anchor="middle">equipment</text>
+  <text class="erd-tag pk" x="52" y="302">PK</text><text class="erd-col pkname" x="86" y="302">id</text><text class="erd-type" x="318" y="302" text-anchor="end">INT</text>
+  <line class="erd-div" x1="40" y1="310" x2="330" y2="310"/>
+  <text class="erd-col" x="86" y="324">name</text><text class="erd-type" x="318" y="324" text-anchor="end">NVARCHAR(100)</text>
+  <text class="erd-col" x="86" y="346">category</text><text class="erd-type" x="318" y="346" text-anchor="end">NVARCHAR(50)</text>
+  <text class="erd-col" x="86" y="368">quantity</text><text class="erd-type" x="318" y="368" text-anchor="end">INT</text>
+  <text class="erd-col" x="86" y="390">status</text><text class="erd-type" x="318" y="390" text-anchor="end">NVARCHAR(15)</text>
+  <text class="erd-col" x="86" y="412">purchase_date</text><text class="erd-type" x="318" y="412" text-anchor="end">DATE</text>
+  <text class="erd-col" x="86" y="434">notes</text><text class="erd-type" x="318" y="434" text-anchor="end">NVARCHAR(MAX)</text></g>
+
+  <!-- payments (C1) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="40" y="470" width="290" height="30"/><rect class="erd-b" x="40" y="500" width="290" height="188"/>
+  <text class="erd-title" x="185" y="490" text-anchor="middle">payments</text>
+  <text class="erd-tag pk" x="52" y="522">PK</text><text class="erd-col pkname" x="86" y="522">id</text><text class="erd-type" x="318" y="522" text-anchor="end">INT</text>
+  <line class="erd-div" x1="40" y1="530" x2="330" y2="530"/>
+  <text class="erd-tag fk" x="52" y="544">FK</text><text class="erd-col" x="86" y="544">member_id</text><text class="erd-type" x="318" y="544" text-anchor="end">INT</text>
+  <text class="erd-col" x="86" y="566">package_id</text><text class="erd-type" x="318" y="566" text-anchor="end">INT</text>
+  <text class="erd-col" x="86" y="588">amount</text><text class="erd-type" x="318" y="588" text-anchor="end">DECIMAL(12,2)</text>
+  <text class="erd-col" x="86" y="610">method</text><text class="erd-type" x="318" y="610" text-anchor="end">NVARCHAR(20)</text>
+  <text class="erd-col" x="86" y="632">status</text><text class="erd-type" x="318" y="632" text-anchor="end">NVARCHAR(15)</text>
+  <text class="erd-col" x="86" y="654">description</text><text class="erd-type" x="318" y="654" text-anchor="end">NVARCHAR(255)</text>
+  <text class="erd-col" x="86" y="676">paid_at</text><text class="erd-type" x="318" y="676" text-anchor="end">DATETIME2</text></g>
+
+  <!-- health_metrics (C1) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="40" y="710" width="290" height="30"/><rect class="erd-b" x="40" y="740" width="290" height="188"/>
+  <text class="erd-title" x="185" y="730" text-anchor="middle">health_metrics</text>
+  <text class="erd-tag pk" x="52" y="762">PK</text><text class="erd-col pkname" x="86" y="762">id</text><text class="erd-type" x="318" y="762" text-anchor="end">INT</text>
+  <line class="erd-div" x1="40" y1="770" x2="330" y2="770"/>
+  <text class="erd-tag fk" x="52" y="784">FK</text><text class="erd-col" x="86" y="784">member_id</text><text class="erd-type" x="318" y="784" text-anchor="end">INT</text>
+  <text class="erd-col" x="86" y="806">recorded_date</text><text class="erd-type" x="318" y="806" text-anchor="end">DATE</text>
+  <text class="erd-col" x="86" y="828">weight_kg</text><text class="erd-type" x="318" y="828" text-anchor="end">DECIMAL(5,2)</text>
+  <text class="erd-col" x="86" y="850">height_cm</text><text class="erd-type" x="318" y="850" text-anchor="end">DECIMAL(5,2)</text>
+  <text class="erd-col" x="86" y="872">body_fat_pct</text><text class="erd-type" x="318" y="872" text-anchor="end">DECIMAL(5,2)</text>
+  <text class="erd-col" x="86" y="894">notes</text><text class="erd-type" x="318" y="894" text-anchor="end">NVARCHAR(255)</text>
+  <text class="erd-col" x="86" y="916">created_at</text><text class="erd-type" x="318" y="916" text-anchor="end">DATETIME2</text></g>
+
+  <!-- members (C2) -->
+  <g class="box"><rect class="erd-h erd-concrete" x="390" y="300" width="300" height="30"/><rect class="erd-b" x="390" y="330" width="300" height="232"/>
+  <text class="erd-title" x="540" y="320" text-anchor="middle">members</text>
+  <text class="erd-tag pk" x="402" y="352">PK</text><text class="erd-col pkname" x="436" y="352">id</text><text class="erd-type" x="678" y="352" text-anchor="end">INT</text>
+  <line class="erd-div" x1="390" y1="360" x2="690" y2="360"/>
+  <text class="erd-tag fk" x="402" y="374">FK</text><text class="erd-col" x="436" y="374">user_id</text><text class="erd-type" x="678" y="374" text-anchor="end">INT</text>
+  <text class="erd-col" x="436" y="396">full_name</text><text class="erd-type" x="678" y="396" text-anchor="end">NVARCHAR(100)</text>
+  <text class="erd-col" x="436" y="418">gender</text><text class="erd-type" x="678" y="418" text-anchor="end">NVARCHAR(10)</text>
+  <text class="erd-col" x="436" y="440">date_of_birth</text><text class="erd-type" x="678" y="440" text-anchor="end">DATE</text>
+  <text class="erd-col" x="436" y="462">address</text><text class="erd-type" x="678" y="462" text-anchor="end">NVARCHAR(255)</text>
+  <text class="erd-tag fk" x="402" y="484">fk</text><text class="erd-col" x="436" y="484">package_id</text><text class="erd-type" x="678" y="484" text-anchor="end">INT</text>
+  <text class="erd-col" x="436" y="506">join_date</text><text class="erd-type" x="678" y="506" text-anchor="end">DATE</text>
+  <text class="erd-col" x="436" y="528">expiry_date</text><text class="erd-type" x="678" y="528" text-anchor="end">DATE</text>
+  <text class="erd-col" x="436" y="550">status</text><text class="erd-type" x="678" y="550" text-anchor="end">NVARCHAR(15)</text></g>
+
+  <!-- enrollments (C2) -->
+  <g class="box"><rect class="erd-h erd-client" x="390" y="600" width="300" height="30"/><rect class="erd-b" x="390" y="630" width="300" height="122"/>
+  <text class="erd-title" x="540" y="620" text-anchor="middle">enrollments</text>
+  <text class="erd-tag pk" x="402" y="652">PK</text><text class="erd-col pkname" x="436" y="652">id</text><text class="erd-type" x="678" y="652" text-anchor="end">INT</text>
+  <line class="erd-div" x1="390" y1="660" x2="690" y2="660"/>
+  <text class="erd-tag fk" x="402" y="674">FK</text><text class="erd-col" x="436" y="674">member_id</text><text class="erd-type" x="678" y="674" text-anchor="end">INT</text>
+  <text class="erd-tag fk" x="402" y="696">FK</text><text class="erd-col" x="436" y="696">class_id</text><text class="erd-type" x="678" y="696" text-anchor="end">INT</text>
+  <text class="erd-col" x="436" y="718">enroll_date</text><text class="erd-type" x="678" y="718" text-anchor="end">DATE</text>
+  <text class="erd-col" x="436" y="740">status</text><text class="erd-type" x="678" y="740" text-anchor="end">NVARCHAR(15)</text></g>
+
+  <!-- attendance (C2) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="390" y="800" width="300" height="30"/><rect class="erd-b" x="390" y="830" width="300" height="144"/>
+  <text class="erd-title" x="540" y="820" text-anchor="middle">attendance</text>
+  <text class="erd-tag pk" x="402" y="852">PK</text><text class="erd-col pkname" x="436" y="852">id</text><text class="erd-type" x="678" y="852" text-anchor="end">INT</text>
+  <line class="erd-div" x1="390" y1="860" x2="690" y2="860"/>
+  <text class="erd-tag fk" x="402" y="874">FK</text><text class="erd-col" x="436" y="874">class_id</text><text class="erd-type" x="678" y="874" text-anchor="end">INT</text>
+  <text class="erd-tag fk" x="402" y="896">FK</text><text class="erd-col" x="436" y="896">member_id</text><text class="erd-type" x="678" y="896" text-anchor="end">INT</text>
+  <text class="erd-col" x="436" y="918">session_date</text><text class="erd-type" x="678" y="918" text-anchor="end">DATE</text>
+  <text class="erd-col" x="436" y="940">status</text><text class="erd-type" x="678" y="940" text-anchor="end">NVARCHAR(15)</text>
+  <text class="erd-col" x="436" y="962">checked_in_at</text><text class="erd-type" x="678" y="962" text-anchor="end">DATETIME2</text></g>
+
+  <!-- training_classes (C3) -->
+  <g class="box"><rect class="erd-h erd-concrete" x="760" y="300" width="300" height="30"/><rect class="erd-b" x="760" y="330" width="300" height="188"/>
+  <text class="erd-title" x="910" y="320" text-anchor="middle">training_classes</text>
+  <text class="erd-tag pk" x="772" y="352">PK</text><text class="erd-col pkname" x="806" y="352">id</text><text class="erd-type" x="1048" y="352" text-anchor="end">INT</text>
+  <line class="erd-div" x1="760" y1="360" x2="1060" y2="360"/>
+  <text class="erd-tag fk" x="772" y="374">FK</text><text class="erd-col" x="806" y="374">coach_id</text><text class="erd-type" x="1048" y="374" text-anchor="end">INT ?</text>
+  <text class="erd-col" x="806" y="396">name</text><text class="erd-type" x="1048" y="396" text-anchor="end">NVARCHAR(100)</text>
+  <text class="erd-col" x="806" y="418">capacity</text><text class="erd-type" x="1048" y="418" text-anchor="end">INT</text>
+  <text class="erd-col" x="806" y="440">current_enrolled</text><text class="erd-type" x="1048" y="440" text-anchor="end">INT</text>
+  <text class="erd-col" x="806" y="462">level</text><text class="erd-type" x="1048" y="462" text-anchor="end">NVARCHAR(20)</text>
+  <text class="erd-col" x="806" y="484">description</text><text class="erd-type" x="1048" y="484" text-anchor="end">NVARCHAR(MAX)</text>
+  <text class="erd-col" x="806" y="506">is_active</text><text class="erd-type" x="1048" y="506" text-anchor="end">BIT</text></g>
+
+  <!-- progress_notes (C3) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="760" y="620" width="300" height="30"/><rect class="erd-b" x="760" y="650" width="300" height="166"/>
+  <text class="erd-title" x="910" y="640" text-anchor="middle">progress_notes</text>
+  <text class="erd-tag pk" x="772" y="672">PK</text><text class="erd-col pkname" x="806" y="672">id</text><text class="erd-type" x="1048" y="672" text-anchor="end">INT</text>
+  <line class="erd-div" x1="760" y1="680" x2="1060" y2="680"/>
+  <text class="erd-tag fk" x="772" y="694">FK</text><text class="erd-col" x="806" y="694">member_id</text><text class="erd-type" x="1048" y="694" text-anchor="end">INT</text>
+  <text class="erd-tag fk" x="772" y="716">FK</text><text class="erd-col" x="806" y="716">coach_id</text><text class="erd-type" x="1048" y="716" text-anchor="end">INT</text>
+  <text class="erd-tag fk" x="772" y="738">FK</text><text class="erd-col" x="806" y="738">class_id</text><text class="erd-type" x="1048" y="738" text-anchor="end">INT ?</text>
+  <text class="erd-col" x="806" y="760">note</text><text class="erd-type" x="1048" y="760" text-anchor="end">NVARCHAR(MAX)</text>
+  <text class="erd-col" x="806" y="782">rating</text><text class="erd-type" x="1048" y="782" text-anchor="end">INT</text>
+  <text class="erd-col" x="806" y="804">recorded_at</text><text class="erd-type" x="1048" y="804" text-anchor="end">DATETIME2</text></g>
+
+  <!-- schedules (C3) -->
+  <g class="box"><rect class="erd-h erd-iface" x="760" y="880" width="300" height="30"/><rect class="erd-b" x="760" y="910" width="300" height="166"/>
+  <text class="erd-title" x="910" y="900" text-anchor="middle">schedules</text>
+  <text class="erd-tag pk" x="772" y="932">PK</text><text class="erd-col pkname" x="806" y="932">id</text><text class="erd-type" x="1048" y="932" text-anchor="end">INT</text>
+  <line class="erd-div" x1="760" y1="940" x2="1060" y2="940"/>
+  <text class="erd-tag fk" x="772" y="954">FK</text><text class="erd-col" x="806" y="954">class_id</text><text class="erd-type" x="1048" y="954" text-anchor="end">INT</text>
+  <text class="erd-col" x="806" y="976">day_of_week</text><text class="erd-type" x="1048" y="976" text-anchor="end">NVARCHAR(15)</text>
+  <text class="erd-col" x="806" y="998">start_time</text><text class="erd-type" x="1048" y="998" text-anchor="end">TIME</text>
+  <text class="erd-col" x="806" y="1020">end_time</text><text class="erd-type" x="1048" y="1020" text-anchor="end">TIME</text>
+  <text class="erd-col" x="806" y="1042">room</text><text class="erd-type" x="1048" y="1042" text-anchor="end">NVARCHAR(50)</text>
+  <text class="erd-col" x="806" y="1064">repeat_weekly</text><text class="erd-type" x="1048" y="1064" text-anchor="end">BIT</text></g>
+
+  <!-- coach_ratings (C3) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="760" y="1120" width="300" height="30"/><rect class="erd-b" x="760" y="1150" width="300" height="144"/>
+  <text class="erd-title" x="910" y="1140" text-anchor="middle">coach_ratings</text>
+  <text class="erd-tag pk" x="772" y="1172">PK</text><text class="erd-col pkname" x="806" y="1172">id</text><text class="erd-type" x="1048" y="1172" text-anchor="end">INT</text>
+  <line class="erd-div" x1="760" y1="1180" x2="1060" y2="1180"/>
+  <text class="erd-tag fk" x="772" y="1194">FK</text><text class="erd-col" x="806" y="1194">member_id</text><text class="erd-type" x="1048" y="1194" text-anchor="end">INT</text>
+  <text class="erd-tag fk" x="772" y="1216">FK</text><text class="erd-col" x="806" y="1216">coach_id</text><text class="erd-type" x="1048" y="1216" text-anchor="end">INT</text>
+  <text class="erd-col" x="806" y="1238">rating</text><text class="erd-type" x="1048" y="1238" text-anchor="end">INT</text>
+  <text class="erd-col" x="806" y="1260">comment</text><text class="erd-type" x="1048" y="1260" text-anchor="end">NVARCHAR(500)</text>
+  <text class="erd-col" x="806" y="1282">created_at</text><text class="erd-type" x="1048" y="1282" text-anchor="end">DATETIME2</text></g>
+
+  <!-- coaches (C4) -->
+  <g class="box"><rect class="erd-h erd-concrete" x="1130" y="300" width="300" height="30"/><rect class="erd-b" x="1130" y="330" width="300" height="188"/>
+  <text class="erd-title" x="1280" y="320" text-anchor="middle">coaches</text>
+  <text class="erd-tag pk" x="1142" y="352">PK</text><text class="erd-col pkname" x="1176" y="352">id</text><text class="erd-type" x="1418" y="352" text-anchor="end">INT</text>
+  <line class="erd-div" x1="1130" y1="360" x2="1430" y2="360"/>
+  <text class="erd-tag fk" x="1142" y="374">FK</text><text class="erd-col" x="1176" y="374">user_id</text><text class="erd-type" x="1418" y="374" text-anchor="end">INT</text>
+  <text class="erd-col" x="1176" y="396">full_name</text><text class="erd-type" x="1418" y="396" text-anchor="end">NVARCHAR(100)</text>
+  <text class="erd-col" x="1176" y="418">specialization</text><text class="erd-type" x="1418" y="418" text-anchor="end">NVARCHAR(100)</text>
+  <text class="erd-col" x="1176" y="440">experience</text><text class="erd-type" x="1418" y="440" text-anchor="end">INT</text>
+  <text class="erd-col" x="1176" y="462">bio</text><text class="erd-type" x="1418" y="462" text-anchor="end">NVARCHAR(MAX)</text>
+  <text class="erd-col" x="1176" y="484">salary</text><text class="erd-type" x="1418" y="484" text-anchor="end">DECIMAL(12,2)</text>
+  <text class="erd-col" x="1176" y="506">status</text><text class="erd-type" x="1418" y="506" text-anchor="end">NVARCHAR(15)</text></g>
+
+  <!-- lesson_plans (C4) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="1130" y="620" width="300" height="30"/><rect class="erd-b" x="1130" y="650" width="300" height="144"/>
+  <text class="erd-title" x="1280" y="640" text-anchor="middle">lesson_plans</text>
+  <text class="erd-tag pk" x="1142" y="672">PK</text><text class="erd-col pkname" x="1176" y="672">id</text><text class="erd-type" x="1418" y="672" text-anchor="end">INT</text>
+  <line class="erd-div" x1="1130" y1="680" x2="1430" y2="680"/>
+  <text class="erd-tag fk" x="1142" y="694">FK</text><text class="erd-col" x="1176" y="694">class_id</text><text class="erd-type" x="1418" y="694" text-anchor="end">INT</text>
+  <text class="erd-tag fk" x="1142" y="716">FK</text><text class="erd-col" x="1176" y="716">coach_id</text><text class="erd-type" x="1418" y="716" text-anchor="end">INT</text>
+  <text class="erd-col" x="1176" y="738">title</text><text class="erd-type" x="1418" y="738" text-anchor="end">NVARCHAR(150)</text>
+  <text class="erd-col" x="1176" y="760">content</text><text class="erd-type" x="1418" y="760" text-anchor="end">NVARCHAR(MAX)</text>
+  <text class="erd-col" x="1176" y="782">created_at</text><text class="erd-type" x="1418" y="782" text-anchor="end">DATETIME2</text></g>
+
+  <!-- pt_sessions (C4) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="1130" y="840" width="300" height="30"/><rect class="erd-b" x="1130" y="870" width="300" height="210"/>
+  <text class="erd-title" x="1280" y="860" text-anchor="middle">pt_sessions</text>
+  <text class="erd-tag pk" x="1142" y="892">PK</text><text class="erd-col pkname" x="1176" y="892">id</text><text class="erd-type" x="1418" y="892" text-anchor="end">INT</text>
+  <line class="erd-div" x1="1130" y1="900" x2="1430" y2="900"/>
+  <text class="erd-tag fk" x="1142" y="914">FK</text><text class="erd-col" x="1176" y="914">member_id</text><text class="erd-type" x="1418" y="914" text-anchor="end">INT</text>
+  <text class="erd-tag fk" x="1142" y="936">FK</text><text class="erd-col" x="1176" y="936">coach_id</text><text class="erd-type" x="1418" y="936" text-anchor="end">INT</text>
+  <text class="erd-col" x="1176" y="958">session_date</text><text class="erd-type" x="1418" y="958" text-anchor="end">DATE</text>
+  <text class="erd-col" x="1176" y="980">start_time</text><text class="erd-type" x="1418" y="980" text-anchor="end">TIME</text>
+  <text class="erd-col" x="1176" y="1002">end_time</text><text class="erd-type" x="1418" y="1002" text-anchor="end">TIME</text>
+  <text class="erd-col" x="1176" y="1024">status</text><text class="erd-type" x="1418" y="1024" text-anchor="end">NVARCHAR(15)</text>
+  <text class="erd-col" x="1176" y="1046">notes</text><text class="erd-type" x="1418" y="1046" text-anchor="end">NVARCHAR(255)</text>
+  <text class="erd-col" x="1176" y="1068">created_at</text><text class="erd-type" x="1418" y="1068" text-anchor="end">DATETIME2</text></g>
+
+  <!-- messages (C5) module -->
+  <g class="box"><rect class="erd-h erd-mod" x="1500" y="40" width="260" height="30"/><rect class="erd-b" x="1500" y="70" width="260" height="144"/>
+  <text class="erd-title" x="1630" y="60" text-anchor="middle">messages</text>
+  <text class="erd-tag pk" x="1512" y="92">PK</text><text class="erd-col pkname" x="1546" y="92">id</text><text class="erd-type" x="1748" y="92" text-anchor="end">INT</text>
+  <line class="erd-div" x1="1500" y1="100" x2="1760" y2="100"/>
+  <text class="erd-tag fk" x="1512" y="114">FK</text><text class="erd-col" x="1546" y="114">sender_user_id</text><text class="erd-type" x="1748" y="114" text-anchor="end">INT</text>
+  <text class="erd-tag fk" x="1512" y="136">FK</text><text class="erd-col" x="1546" y="136">recipient_user_id</text><text class="erd-type" x="1748" y="136" text-anchor="end">INT</text>
+  <text class="erd-col" x="1546" y="158">body</text><text class="erd-type" x="1748" y="158" text-anchor="end">NVARCHAR(2000)</text>
+  <text class="erd-col" x="1546" y="180">sent_at</text><text class="erd-type" x="1748" y="180" text-anchor="end">DATETIME2</text>
+  <text class="erd-col" x="1546" y="202">is_read</text><text class="erd-type" x="1748" y="202" text-anchor="end">BIT</text></g>
+
+  <!-- login_attempts (C5) -->
+  <g class="box"><rect class="erd-h erd-node" x="1500" y="260" width="260" height="30"/><rect class="erd-b" x="1500" y="290" width="260" height="122"/>
+  <text class="erd-title" x="1630" y="280" text-anchor="middle">login_attempts</text>
+  <text class="erd-tag pk" x="1512" y="312">PK</text><text class="erd-col pkname" x="1546" y="312">id</text><text class="erd-type" x="1748" y="312" text-anchor="end">INT</text>
+  <line class="erd-div" x1="1500" y1="320" x2="1760" y2="320"/>
+  <text class="erd-col" x="1546" y="334">username</text><text class="erd-type" x="1748" y="334" text-anchor="end">NVARCHAR(50)</text>
+  <text class="erd-col" x="1546" y="356">ip_address</text><text class="erd-type" x="1748" y="356" text-anchor="end">NVARCHAR(50)</text>
+  <text class="erd-col" x="1546" y="378">attempt_time</text><text class="erd-type" x="1748" y="378" text-anchor="end">DATETIME2</text>
+  <text class="erd-col" x="1546" y="400">is_success</text><text class="erd-type" x="1748" y="400" text-anchor="end">BIT</text></g>
+
+  </svg></div>
+</section>
+</div></body></html>
