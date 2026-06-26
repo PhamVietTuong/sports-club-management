@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using SportsClub.Api.Data;
 using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Patterns.Singleton;
+using SportsClub.Api.Hubs;
 using SportsClub.Api.Repositories;
 using SportsClub.Api.Security;
 using SportsClub.Api.Services;
@@ -59,6 +60,7 @@ builder.Services.AddScoped<HealthMetricRepository>();
 builder.Services.AddScoped<PtSessionRepository>();
 builder.Services.AddScoped<MessageRepository>();
 builder.Services.AddScoped<AccountService>();
+builder.Services.AddScoped<ChatDirectory>();
 builder.Services.AddSingleton<JwtTokenService>();
 
 // ── Authentication / Authorization (JWT bearer) ──────────────────────────────
@@ -76,6 +78,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
             ClockSkew = TimeSpan.FromMinutes(1),
         };
+
+        // SignalR WebSocket connections cannot send an Authorization header, so the
+        // JS client passes the JWT as ?access_token=… . Read it only for the hub path.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    context.Token = accessToken;
+                return Task.CompletedTask;
+            },
+        };
     });
 builder.Services.AddAuthorization();
 
@@ -85,7 +101,9 @@ builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy =>
 {
     var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
                   ?? new[] { "http://localhost:5173" };
-    policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
+    // AllowCredentials is required for the SignalR connection (and is safe here
+    // because the origin list is explicit, never AllowAnyOrigin).
+    policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
 }));
 
 // RATE LIMITING — a second, IP-based layer in front of the per-username
@@ -108,6 +126,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
@@ -141,5 +160,6 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();

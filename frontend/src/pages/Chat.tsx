@@ -1,14 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { api, errorMessage } from '../api/client'
+import { HubConnectionBuilder, HubConnectionState, type HubConnection } from '@microsoft/signalr'
+import { api, errorMessage, tokenStore } from '../api/client'
+import { useAuth } from '../auth/AuthContext'
 import type { ChatContact, ChatMessage } from '../api/types'
 
 export default function Chat() {
+  const { user } = useAuth()
+  const myId = user?.userId ?? 0
+
   const [contacts, setContacts] = useState<ChatContact[]>([])
   const [activeId, setActiveId] = useState<number | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const [error, setError] = useState('')
+  const [connected, setConnected] = useState(false)
+
   const endRef = useRef<HTMLDivElement>(null)
+  const connRef = useRef<HubConnection | null>(null)
+  // Refs so the (long-lived) ReceiveMessage handler always sees current values.
+  const activeIdRef = useRef<number | null>(null)
+  activeIdRef.current = activeId
 
   function loadContacts() {
     api.get<ChatContact[]>('/chat/contacts')
@@ -16,38 +27,66 @@ export default function Chat() {
       .catch((err) => setError(errorMessage(err, 'Không thể tải danh bạ.')))
   }
   function loadConversation(userId: number) {
+    // GET marks the thread read server-side and returns the full history.
     api.get<ChatMessage[]>(`/chat/conversation/${userId}`)
       .then((res) => setMessages(res.data))
       .catch((err) => setError(errorMessage(err)))
   }
 
-  // Poll contacts (for unread badges) every 5s.
+  // Open one SignalR connection for the lifetime of the page.
   useEffect(() => {
+    // `disposed` guards against React 18 StrictMode's mount→unmount→mount in dev:
+    // the first connection's cleanup aborts its own start(), which must not surface
+    // as an error on the (real) second connection.
+    let disposed = false
     loadContacts()
-    const t = setInterval(loadContacts, 5000)
-    return () => clearInterval(t)
+    const conn = new HubConnectionBuilder()
+      .withUrl('/hubs/chat', { accessTokenFactory: () => tokenStore.get() ?? '' })
+      .withAutomaticReconnect()
+      .build()
+    connRef.current = conn
+
+    conn.on('ReceiveMessage', (m: { senderUserId: number; recipientUserId: number }) => {
+      const other = m.senderUserId === myId ? m.recipientUserId : m.senderUserId
+      // If the message belongs to the open thread, refresh it (also marks read).
+      if (other === activeIdRef.current) loadConversation(other)
+      // Always refresh contacts so unread badges stay current.
+      loadContacts()
+    })
+    conn.onreconnected(() => { setConnected(true); setError('') })
+    conn.onreconnecting(() => setConnected(false))
+    conn.onclose(() => setConnected(false))
+
+    conn.start()
+      .then(() => { if (!disposed) { setConnected(true); setError('') } })
+      .catch(() => { if (!disposed) setError('Không thể kết nối máy chủ trò chuyện.') })
+
+    return () => { disposed = true; conn.stop() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Poll the open conversation every 4s.
   useEffect(() => {
-    if (activeId === null) return
-    loadConversation(activeId)
-    const t = setInterval(() => loadConversation(activeId), 4000)
-    return () => clearInterval(t)
+    if (activeId !== null) loadConversation(activeId)
   }, [activeId])
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   async function send(e: FormEvent) {
     e.preventDefault()
-    if (!draft.trim() || activeId === null) return
-    const body = draft
+    const body = draft.trim()
+    if (!body || activeId === null) return
+    if (connRef.current?.state !== HubConnectionState.Connected) {
+      setError('Chưa kết nối. Vui lòng thử lại.')
+      return
+    }
     setDraft('')
     try {
-      await api.post('/chat/send', { recipientUserId: activeId, body })
-      loadConversation(activeId)
-      loadContacts()
-    } catch (err) { setError(errorMessage(err)); setDraft(body) }
+      // Server persists and pushes ReceiveMessage back to both parties.
+      await connRef.current.invoke('SendMessage', activeId, body)
+    } catch (err) {
+      setError(errorMessage(err, 'Không gửi được tin nhắn.'))
+      setDraft(body)
+    }
   }
 
   const active = contacts.find((c) => c.userId === activeId) ?? null
@@ -75,7 +114,10 @@ export default function Chat() {
             <p className="text-muted" style={{ padding: 16 }}>Chọn một liên hệ để bắt đầu trò chuyện.</p>
           ) : (
             <>
-              <div className="chat-thread-header">{active.name}</div>
+              <div className="chat-thread-header">
+                {active.name}
+                {!connected && <span className="text-muted" style={{ fontSize: 12, fontWeight: 400 }}> · đang kết nối…</span>}
+              </div>
               <div className="chat-messages">
                 {messages.map((m) => (
                   <div key={m.id} className={'chat-bubble' + (m.mine ? ' mine' : '')}>

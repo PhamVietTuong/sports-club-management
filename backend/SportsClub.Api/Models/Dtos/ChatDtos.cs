@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using SportsClub.Api.Models.Entities;
 
 namespace SportsClub.Api.Models.Dtos;
@@ -23,7 +22,3 @@ public record ChatMessageDto(
         m.Id, m.SenderUserId, m.RecipientUserId, m.Body, m.SentAt, m.IsRead,
         m.SenderUserId == meUserId);
 }
-
-public record SendMessageRequest(
-    [param: Required] int RecipientUserId,
-    [param: Required] string Body);

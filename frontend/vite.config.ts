@@ -12,6 +12,12 @@ export default defineConfig({
         target: 'http://localhost:5097',
         changeOrigin: true,
       },
+      // SignalR chat hub — needs the WebSocket upgrade proxied to the backend.
+      '/hubs': {
+        target: 'http://localhost:5097',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
 })

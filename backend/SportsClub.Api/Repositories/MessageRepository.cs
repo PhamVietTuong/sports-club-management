@@ -35,7 +35,7 @@ public class MessageRepository
         return rows.ToDictionary(r => r.SenderUserId, r => r.Count);
     }
 
-    public async Task<int> SendAsync(int senderUserId, int recipientUserId, string body)
+    public async Task<Message> SendAsync(int senderUserId, int recipientUserId, string body)
     {
         var msg = new Message
         {
@@ -47,6 +47,6 @@ public class MessageRepository
         };
         _db.Messages.Add(msg);
         await _db.SaveChangesAsync();
-        return msg.Id;
+        return msg;
     }
 }
