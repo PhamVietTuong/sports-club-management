@@ -42,4 +42,24 @@ public static class ScheduleClash
                 return s;
         return null;
     }
+
+    /// <summary>Do two time ranges on the same day overlap?</summary>
+    public static bool TimesOverlap(TimeOnly start1, TimeOnly end1, TimeOnly start2, TimeOnly end2) =>
+        start1 < end2 && start2 < end1;
+
+    /// <summary>
+    /// Returns an existing slot in the same room that a new slot (day/start/end)
+    /// would clash with — so two classes can't occupy one room at once. Skips the
+    /// slot whose id is <paramref name="excludeId"/> (the row being edited).
+    /// </summary>
+    public static Schedule? FindRoomClash(
+        string? room, string day, TimeOnly start, TimeOnly end,
+        IEnumerable<Schedule> sameRoomSchedules, int excludeId = 0)
+    {
+        if (string.IsNullOrWhiteSpace(room)) return null; // no room booked → nothing to clash
+        foreach (var s in sameRoomSchedules)
+            if (s.Id != excludeId && s.DayOfWeek == day && s.StartTime < end && start < s.EndTime)
+                return s;
+        return null;
+    }
 }

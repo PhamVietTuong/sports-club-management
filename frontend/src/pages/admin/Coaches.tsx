@@ -1,7 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { Coach } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const emptyCreate = {
   username: '', email: '', password: '', fullName: '',
@@ -21,9 +23,9 @@ const STATUS_BADGE: Record<string, string> = {
 }
 
 export default function Coaches() {
-  const [coaches, setCoaches] = useState<Coach[]>([])
   const [statusFilter, setStatusFilter] = useState('')
-  const [error, setError] = useState('')
+  const { items: coaches, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<Coach>('/admin/coaches', { status: statusFilter })
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
@@ -31,18 +33,10 @@ export default function Coaches() {
   const [createForm, setCreateForm] = useState(emptyCreate)
   const [editing, setEditing] = useState<Coach | null>(null)
 
-  function load() {
-    const q = statusFilter ? `?status=${statusFilter}` : ''
-    api.get<Coach[]>('/admin/coaches' + q)
-      .then((res) => setCoaches(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách huấn luyện viên.')))
-  }
-  useEffect(load, [statusFilter])
-
   async function changeStatus(id: number, status: string) {
     try {
       await api.patch(`/admin/coaches/${id}/status`, { status })
-      load()
+      reload()
     } catch (err) {
       setError(errorMessage(err))
     }
@@ -58,7 +52,7 @@ export default function Coaches() {
         specialization: createForm.specialization || null, bio: createForm.bio || null,
         experience: Number(createForm.experience), salary: Number(createForm.salary),
       })
-      setCreateOpen(false); setCreateForm(emptyCreate); setFlash('Đã thêm huấn luyện viên.'); load()
+      setCreateOpen(false); setCreateForm(emptyCreate); setFlash('Đã thêm huấn luyện viên.'); reload()
     } catch (err) { setFormError(errorMessage(err)) } finally { setBusy(false) }
   }
 
@@ -71,7 +65,7 @@ export default function Coaches() {
         fullName: editing.fullName, specialization: editing.specialization,
         bio: editing.bio, experience: editing.experience, salary: editing.salary,
       })
-      setEditing(null); setFlash('Đã cập nhật huấn luyện viên.'); load()
+      setEditing(null); setFlash('Đã cập nhật huấn luyện viên.'); reload()
     } catch (err) { setFormError(errorMessage(err)) } finally { setBusy(false) }
   }
 
@@ -79,20 +73,23 @@ export default function Coaches() {
     <>
       <div className="page-header">
         <h1>Huấn luyện viên</h1>
-        <div className="toolbar">
-          <select className="form-control" value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">Đang làm việc</option>
-            <option value="UNDER_REVIEW">Đang xem xét</option>
-            <option value="TERMINATED">Đã nghỉ việc</option>
-          </select>
-          <button className="btn btn-primary" onClick={() => { setFormError(''); setCreateOpen(true) }}>+ Thêm HLV</button>
-        </div>
+        <button className="btn btn-primary" onClick={() => { setFormError(''); setCreateOpen(true) }}>+ Thêm HLV</button>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo tên / tài khoản / email / chuyên môn…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className="form-control filter-select" value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Tất cả trạng thái</option>
+          <option value="ACTIVE">Đang làm việc</option>
+          <option value="UNDER_REVIEW">Đang xem xét</option>
+          <option value="TERMINATED">Đã nghỉ việc</option>
+        </select>
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -133,6 +130,7 @@ export default function Coaches() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={createOpen} title="Thêm huấn luyện viên" onClose={() => { setFormError(''); setCreateOpen(false) }}>
         <form onSubmit={submitCreate}>

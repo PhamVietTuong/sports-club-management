@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { Coach, Schedule, TrainingClass } from '../../api/types'
+import type { Coach, Paged, Schedule, TrainingClass } from '../../api/types'
 import Modal from '../../components/Modal'
 import ScheduleDialog from '../../components/ScheduleDialog'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']
 
@@ -21,25 +23,19 @@ const emptyForm: ClassForm = {
 }
 
 export default function Classes() {
-  const [classes, setClasses] = useState<TrainingClass[]>([])
+  const { items: classes, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<TrainingClass>('/admin/classes')
   const [coaches, setCoaches] = useState<Coach[]>([])
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [scheduleDialog, setScheduleDialog] = useState<{ title: string; schedules: Schedule[] } | null>(null)
-  const [error, setError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<ClassForm>(emptyForm)
 
-  function load() {
-    api.get<TrainingClass[]>('/admin/classes')
-      .then((res) => setClasses(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách lớp học.')))
-  }
-  useEffect(load, [])
   useEffect(() => {
-    api.get<Coach[]>('/admin/coaches').then((res) => setCoaches(res.data)).catch(() => {})
-    api.get<Schedule[]>('/admin/schedules').then((res) => setSchedules(res.data)).catch(() => {})
+    api.get<Paged<Coach>>('/admin/coaches?pageSize=1000').then((res) => setCoaches(res.data.items)).catch(() => {})
+    api.get<Paged<Schedule>>('/admin/schedules?pageSize=1000').then((res) => setSchedules(res.data.items)).catch(() => {})
   }, [])
 
   function viewSchedule(c: TrainingClass) {
@@ -57,7 +53,7 @@ export default function Classes() {
   }
 
   async function clone(id: number) {
-    try { await api.post(`/admin/classes/${id}/clone`); setFlash('Đã nhân bản lớp học.'); load() }
+    try { await api.post(`/admin/classes/${id}/clone`); setFlash('Đã nhân bản lớp học.'); reload() }
     catch (err) { setError(errorMessage(err)) }
   }
 
@@ -72,7 +68,7 @@ export default function Classes() {
     try {
       if (form.id) await api.put(`/admin/classes/${form.id}`, body)
       else await api.post('/admin/classes', body)
-      setOpen(false); setFlash(form.id ? 'Đã cập nhật lớp học.' : 'Đã thêm lớp học.'); load()
+      setOpen(false); setFlash(form.id ? 'Đã cập nhật lớp học.' : 'Đã thêm lớp học.'); reload()
     } catch (err) { setError(errorMessage(err)) } finally { setBusy(false) }
   }
 
@@ -85,6 +81,11 @@ export default function Classes() {
 
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo tên / cấp độ…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -118,6 +119,7 @@ export default function Classes() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={open} title={form.id ? 'Sửa lớp học' : 'Thêm lớp học'} onClose={() => setOpen(false)}>
         <form onSubmit={submit}>

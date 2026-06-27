@@ -4,6 +4,7 @@ using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
 using SportsClub.Api.Patterns.Iterator;
 using SportsClub.Api.Repositories;
+using SportsClub.Api.Services;
 
 namespace SportsClub.Api.Controllers.Admin;
 
@@ -13,15 +14,21 @@ namespace SportsClub.Api.Controllers.Admin;
 public class AdminSchedulesController : ControllerBase
 {
     private readonly ScheduleRepository _schedules;
+    private readonly ClassRepository _classes;
 
-    public AdminSchedulesController(ScheduleRepository schedules) => _schedules = schedules;
+    public AdminSchedulesController(ScheduleRepository schedules, ClassRepository classes)
+    {
+        _schedules = schedules;
+        _classes = classes;
+    }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ScheduleDto>>> List()
+    public async Task<ActionResult<PagedResult<ScheduleDto>>> List(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
-        // ITERATOR PATTERN — traverse schedules via the club iterator
-        var schedules = ClubCollection<Schedule>.Of(await _schedules.FindAllAsync());
-        return Ok(schedules.Select(ScheduleDto.From));
+        var result = await _schedules.FindPagedAsync(page, pageSize, search);
+        // ITERATOR PATTERN — traverse the page via the club iterator while mapping.
+        return Ok(result.MapIterating(ScheduleDto.From));
     }
 
     [HttpPost]
@@ -33,12 +40,8 @@ public class AdminSchedulesController : ControllerBase
         if (end <= start)
             return BadRequest(new MessageResponse("Giờ kết thúc phải sau giờ bắt đầu."));
 
-        // Reject a slot that overlaps another session of the same class on the
-        // same weekday (e.g. two 07:00–08:00 Monday slots).
-        var existing = await _schedules.FindByClassIdAsync(req.ClassId);
-        if (Overlaps(existing, req.DayOfWeek, start, end))
-            return BadRequest(new MessageResponse(
-                "Lịch tập bị trùng giờ với một buổi khác của lớp này trong cùng ngày."));
+        var conflict = await ValidateSlotAsync(req.ClassId, req.Room, req.DayOfWeek, start, end, excludeId: 0);
+        if (conflict is not null) return BadRequest(new MessageResponse(conflict));
 
         await _schedules.SaveAsync(new Schedule
         {
@@ -63,11 +66,8 @@ public class AdminSchedulesController : ControllerBase
         if (end <= start)
             return BadRequest(new MessageResponse("Giờ kết thúc phải sau giờ bắt đầu."));
 
-        // Same overlap guard as Create, ignoring the row being edited.
-        var existing = await _schedules.FindByClassIdAsync(req.ClassId);
-        if (Overlaps(existing, req.DayOfWeek, start, end, excludeId: id))
-            return BadRequest(new MessageResponse(
-                "Lịch tập bị trùng giờ với một buổi khác của lớp này trong cùng ngày."));
+        var conflict = await ValidateSlotAsync(req.ClassId, req.Room, req.DayOfWeek, start, end, excludeId: id);
+        if (conflict is not null) return BadRequest(new MessageResponse(conflict));
 
         schedule.ClassId = req.ClassId;
         schedule.DayOfWeek = req.DayOfWeek;
@@ -102,10 +102,39 @@ public class AdminSchedulesController : ControllerBase
         return Ok(new MessageResponse("Đã xóa lịch tập."));
     }
 
-    /// <summary>True if any existing slot (other than <paramref name="excludeId"/>)
-    /// is on the same weekday and overlaps [start, end).</summary>
-    private static bool Overlaps(
-        IEnumerable<Schedule> existing, string day, TimeOnly start, TimeOnly end, int excludeId = 0) =>
-        existing.Any(s => s.Id != excludeId && s.DayOfWeek == day
-                          && s.StartTime < end && start < s.EndTime);
+    /// <summary>
+    /// Validates a schedule slot against three rules, returning an error message
+    /// (or null when the slot is fine):
+    ///   • no overlap with another session of the SAME class on that day;
+    ///   • no two classes in the SAME room at once (rule 2);
+    ///   • the class's coach is not already teaching another class then (rule 1).
+    /// </summary>
+    private async Task<string?> ValidateSlotAsync(
+        int classId, string? room, string day, TimeOnly start, TimeOnly end, int excludeId)
+    {
+        var sameClass = await _schedules.FindByClassIdAsync(classId);
+        if (sameClass.Any(s => s.Id != excludeId && s.DayOfWeek == day
+                               && s.StartTime < end && start < s.EndTime))
+            return "Lịch tập bị trùng giờ với một buổi khác của lớp này trong cùng ngày.";
+
+        if (!string.IsNullOrWhiteSpace(room))
+        {
+            var roomClash = ScheduleClash.FindRoomClash(
+                room, day, start, end, await _schedules.FindByRoomAsync(room), excludeId);
+            if (roomClash is not null)
+                return $"Phòng \"{room}\" đã có lớp \"{roomClash.Class?.Name}\" " +
+                       $"vào khung giờ này ({roomClash.StartTime:HH\\:mm}–{roomClash.EndTime:HH\\:mm}).";
+        }
+
+        var cls = await _classes.FindByIdAsync(classId);
+        if (cls?.CoachId is int coachId)
+        {
+            var coachSlots = (await _schedules.FindByCoachIdAsync(coachId)).Where(s => s.ClassId != classId);
+            var candidate = new Schedule { DayOfWeek = day, StartTime = start, EndTime = end };
+            if (ScheduleClash.FindConflict(new[] { candidate }, coachSlots) is { } c)
+                return $"HLV đang dạy lớp \"{c.existing.Class?.Name}\" " +
+                       $"vào khung giờ này ({c.existing.StartTime:HH\\:mm}–{c.existing.EndTime:HH\\:mm}).";
+        }
+        return null;
+    }
 }

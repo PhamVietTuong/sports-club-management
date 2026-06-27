@@ -4,6 +4,8 @@ import type { ClassChangeRequest, ClassDetail, CoachAvailableClass, Schedule, Tr
 import { formatSchedules } from '../../utils/schedule'
 import Modal from '../../components/Modal'
 import ScheduleDialog from '../../components/ScheduleDialog'
+import Pagination from '../../components/Pagination'
+import { useClientPaged } from '../../hooks/useClientPaged'
 
 const ACTION_LABEL: Record<string, string> = { CLAIM: 'Nhận lớp', RELEASE: 'Trả lớp' }
 const STATUS_LABEL: Record<string, string> = {
@@ -30,6 +32,14 @@ export default function CoachAvailableClasses() {
     api.get<ClassChangeRequest[]>('/coach/class-requests').then((res) => setRequests(res.data)).catch(() => {})
   }
   useEffect(load, [])
+
+  const av = useClientPaged(available, (a, q) =>
+    a.class.name.toLowerCase().includes(q) || (a.class.level ?? '').toLowerCase().includes(q))
+  const my = useClientPaged(mine, (c, q) =>
+    c.name.toLowerCase().includes(q) || (c.level ?? '').toLowerCase().includes(q))
+  const rq = useClientPaged(requests, (r, q) =>
+    r.className.toLowerCase().includes(q) || r.action.toLowerCase().includes(q)
+    || r.status.toLowerCase().includes(q))
 
   // Classes with an unresolved request can't be re-requested.
   const pendingClassIds = new Set(
@@ -71,11 +81,15 @@ export default function CoachAvailableClasses() {
 
       <div className="card">
         <div className="card-title">Lớp chưa có HLV</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo tên lớp / cấp độ…"
+            value={av.search} onChange={(e) => av.setSearch(e.target.value)} />
+        </div>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Tên lớp</th><th>Cấp độ</th><th>Sĩ số</th><th></th></tr></thead>
             <tbody>
-              {available.map(({ class: c, schedules }) => (
+              {av.pageItems.map(({ class: c, schedules }) => (
                 <tr key={c.id}>
                   <td>{c.name}</td><td>{c.level || '—'}</td>
                   <td>{c.currentEnrolled}/{c.capacity}</td>
@@ -95,19 +109,24 @@ export default function CoachAvailableClasses() {
                   </td>
                 </tr>
               ))}
-              {available.length === 0 && <tr><td colSpan={5} className="empty">Không có lớp nào đang chờ nhận.</td></tr>}
+              {av.pageItems.length === 0 && <tr><td colSpan={5} className="empty">Không có lớp nào đang chờ nhận.</td></tr>}
             </tbody>
           </table>
         </div>
+        <Pagination page={av.page} pageSize={av.pageSize} total={av.total} onPage={av.setPage} />
       </div>
 
       <div className="card mt-4">
         <div className="card-title">Lớp của tôi</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo tên lớp / cấp độ…"
+            value={my.search} onChange={(e) => my.setSearch(e.target.value)} />
+        </div>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Tên lớp</th><th>Cấp độ</th><th>Sĩ số</th><th></th></tr></thead>
             <tbody>
-              {mine.map((c) => (
+              {my.pageItems.map((c) => (
                 <tr key={c.id}>
                   <td>{c.name}</td><td>{c.level || '—'}</td><td>{c.currentEnrolled}/{c.capacity}</td>
                   <td className="actions">
@@ -119,19 +138,24 @@ export default function CoachAvailableClasses() {
                   </td>
                 </tr>
               ))}
-              {mine.length === 0 && <tr><td colSpan={4} className="empty">Bạn chưa phụ trách lớp nào.</td></tr>}
+              {my.pageItems.length === 0 && <tr><td colSpan={4} className="empty">Bạn chưa phụ trách lớp nào.</td></tr>}
             </tbody>
           </table>
         </div>
+        <Pagination page={my.page} pageSize={my.pageSize} total={my.total} onPage={my.setPage} />
       </div>
 
       <div className="card mt-4">
         <div className="card-title">Yêu cầu của tôi</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo lớp / hành động / trạng thái…"
+            value={rq.search} onChange={(e) => rq.setSearch(e.target.value)} />
+        </div>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Lớp</th><th>Hành động</th><th>Trạng thái</th><th>Ngày yêu cầu</th><th>Ghi chú</th></tr></thead>
             <tbody>
-              {requests.map((r) => (
+              {rq.pageItems.map((r) => (
                 <tr key={r.id}>
                   <td>{r.className}</td>
                   <td>{ACTION_LABEL[r.action] ?? r.action}</td>
@@ -141,10 +165,11 @@ export default function CoachAvailableClasses() {
                   <td>{r.note || '—'}</td>
                 </tr>
               ))}
-              {requests.length === 0 && <tr><td colSpan={5} className="empty">Chưa có yêu cầu nào.</td></tr>}
+              {rq.pageItems.length === 0 && <tr><td colSpan={5} className="empty">Chưa có yêu cầu nào.</td></tr>}
             </tbody>
           </table>
         </div>
+        <Pagination page={rq.page} pageSize={rq.pageSize} total={rq.total} onPage={rq.setPage} />
       </div>
 
       <Modal open={detail !== null} title={`Chi tiết lớp: ${detail?.class.name ?? ''}`}

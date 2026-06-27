@@ -2,25 +2,21 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { ClassDetail, ProgressNote, TrainingClass } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 export default function CoachProgress() {
-  const [notes, setNotes] = useState<ProgressNote[]>([])
+  const { items: notes, total, page, pageSize, setPage, search, setSearch, error, reload } =
+    usePaged<ProgressNote>('/coach/progress')
   const [classes, setClasses] = useState<TrainingClass[]>([])
   const [members, setMembers] = useState<{ id: number; name: string }[]>([])
-  const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ classId: '', memberId: '', note: '', rating: '' })
 
-  function load() {
-    api.get<ProgressNote[]>('/coach/progress')
-      .then((res) => setNotes(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải đánh giá.')))
-  }
   useEffect(() => {
-    load()
     api.get<TrainingClass[]>('/coach/classes').then((res) => setClasses(res.data)).catch(() => {})
   }, [])
 
@@ -49,7 +45,7 @@ export default function CoachProgress() {
         note: form.note,
         rating: form.rating ? Number(form.rating) : null,
       })
-      setOpen(false); setFlash('Đã lưu đánh giá tiến độ.'); load()
+      setOpen(false); setFlash('Đã lưu đánh giá tiến độ.'); reload()
     } catch (err) { setFormError(errorMessage(err)) } finally { setBusy(false) }
   }
 
@@ -62,6 +58,11 @@ export default function CoachProgress() {
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
       {classes.length === 0 && <div className="alert alert-warning">Bạn chưa được phân lớp nào.</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo học viên / nội dung…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -79,6 +80,7 @@ export default function CoachProgress() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={open} title="Thêm đánh giá tiến độ" onClose={() => { setFormError(''); setOpen(false) }}>
         <form onSubmit={submit}>

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportsClub.Api.Data;
+using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
 
 namespace SportsClub.Api.Repositories;
@@ -9,6 +10,25 @@ public class MembershipRequestRepository
 {
     private readonly AppDbContext _db;
     public MembershipRequestRepository(AppDbContext db) => _db = db;
+
+    /// <summary>One page of requests, filtered by status and a member-name /
+    /// package-name search.</summary>
+    public Task<PagedResult<MembershipRequest>> FindPagedAsync(
+        int page, int pageSize, string? search, string? status)
+    {
+        var q = _db.MembershipRequests
+            .Include(r => r.Member).ThenInclude(m => m.User)
+            .Include(r => r.Package)
+            .AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status))
+            q = q.Where(r => r.Status == status);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(r => r.Member.FullName.Contains(s) || r.Package.Name.Contains(s));
+        }
+        return q.OrderByDescending(r => r.RequestedAt).ToPagedResultAsync(page, pageSize);
+    }
 
     /// <summary>All requests (optionally filtered by status), newest first — admin view.</summary>
     public Task<List<MembershipRequest>> FindAllAsync(string? status) =>

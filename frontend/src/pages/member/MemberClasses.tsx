@@ -2,12 +2,20 @@ import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { AvailableClass, Schedule } from '../../api/types'
 import ScheduleDialog from '../../components/ScheduleDialog'
+import Pagination from '../../components/Pagination'
+import { useClientPaged } from '../../hooks/useClientPaged'
 
 export default function MemberClasses() {
   const [classes, setClasses] = useState<AvailableClass[]>([])
   const [scheduleDialog, setScheduleDialog] = useState<{ title: string; schedules: Schedule[] } | null>(null)
   const [error, setError] = useState('')
   const [flash, setFlash] = useState('')
+
+  const { pageItems: pageClasses, total, page, pageSize, setPage, search, setSearch } =
+    useClientPaged(classes, (c, q) =>
+      c.class.name.toLowerCase().includes(q)
+      || (c.class.coachName ?? '').toLowerCase().includes(q)
+      || (c.class.level ?? '').toLowerCase().includes(q))
 
   function load() {
     api.get<AvailableClass[]>('/member/classes')
@@ -42,13 +50,18 @@ export default function MemberClasses() {
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
 
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo tên lớp / HLV / cấp độ…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
       <div className="table-wrap">
         <table>
           <thead>
             <tr><th>Tên lớp</th><th>HLV</th><th>Cấp độ</th><th>Lịch học</th><th>Còn trống</th><th></th></tr>
           </thead>
           <tbody>
-            {classes.map(({ class: c, isEnrolled, schedules }) => (
+            {pageClasses.map(({ class: c, isEnrolled, schedules }) => (
               <tr key={c.id}>
                 <td>{c.name}</td>
                 <td>{c.coachName || '—'}</td>
@@ -75,12 +88,13 @@ export default function MemberClasses() {
                 </td>
               </tr>
             ))}
-            {classes.length === 0 && <tr><td colSpan={6} className="empty">
+            {pageClasses.length === 0 && <tr><td colSpan={6} className="empty">
               Không có lớp khả dụng. Hãy đăng ký và kích hoạt một gói tập trước.
             </td></tr>}
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <ScheduleDialog open={scheduleDialog !== null} title={scheduleDialog?.title ?? ''}
         schedules={scheduleDialog?.schedules ?? []} onClose={() => setScheduleDialog(null)} />

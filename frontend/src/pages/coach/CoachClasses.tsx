@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { ClassDetail, Schedule, TrainingClass } from '../../api/types'
-import { formatSchedules } from '../../utils/schedule'
 import ScheduleDialog from '../../components/ScheduleDialog'
+import Pagination from '../../components/Pagination'
+import { useClientPaged } from '../../hooks/useClientPaged'
 
 export default function CoachClasses() {
   const [classes, setClasses] = useState<TrainingClass[]>([])
@@ -10,6 +11,16 @@ export default function CoachClasses() {
   const [scheduleDialog, setScheduleDialog] = useState<{ title: string; schedules: Schedule[] } | null>(null)
   const [error, setError] = useState('')
   const [detailError, setDetailError] = useState('')
+
+  const {
+    pageItems: pageClasses, total, page, pageSize, setPage, search, setSearch,
+  } = useClientPaged(classes, (c, q) =>
+    c.name.toLowerCase().includes(q) || (c.level ?? '').toLowerCase().includes(q))
+
+  const {
+    pageItems: pageMembers, total: memTotal, page: memPage, pageSize: memPageSize,
+    setPage: setMemPage, search: memSearch, setSearch: setMemSearch,
+  } = useClientPaged(detail?.enrolledMembers ?? [], (e, q) => e.memberName.toLowerCase().includes(q))
 
   useEffect(() => {
     api.get<TrainingClass[]>('/coach/classes')
@@ -38,23 +49,30 @@ export default function CoachClasses() {
       {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="grid-2">
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Tên lớp</th><th>Cấp độ</th><th>Sĩ số</th><th></th></tr></thead>
-            <tbody>
-              {classes.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.name}</td><td>{c.level || '—'}</td>
-                  <td>{c.currentEnrolled}/{c.capacity}</td>
-                  <td className="actions">
-                    <button className="btn btn-ghost btn-sm" onClick={() => viewClass(c.id)}>Xem</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => viewSchedule(c)}>Lịch tập</button>
-                  </td>
-                </tr>
-              ))}
-              {classes.length === 0 && <tr><td colSpan={4} className="empty">Chưa có lớp nào.</td></tr>}
-            </tbody>
-          </table>
+        <div>
+          <div className="table-toolbar">
+            <input className="form-control search-input" placeholder="Tìm theo tên lớp / cấp độ…"
+              value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Tên lớp</th><th>Cấp độ</th><th>Sĩ số</th><th></th></tr></thead>
+              <tbody>
+                {pageClasses.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.name}</td><td>{c.level || '—'}</td>
+                    <td>{c.currentEnrolled}/{c.capacity}</td>
+                    <td className="actions">
+                      <button className="btn btn-ghost btn-sm" onClick={() => viewClass(c.id)}>Xem</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => viewSchedule(c)}>Lịch tập</button>
+                    </td>
+                  </tr>
+                ))}
+                {pageClasses.length === 0 && <tr><td colSpan={4} className="empty">Chưa có lớp nào.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
         </div>
 
         <div className="card">
@@ -64,19 +82,23 @@ export default function CoachClasses() {
           {detail && (
             <>
               <p className="text-muted">{detail.class.name} — {detail.enrolledMembers.length} thành viên</p>
-              <p className="text-muted">Lịch học: <strong>{formatSchedules(detail.schedules)}</strong></p>
+              <div className="table-toolbar">
+                <input className="form-control search-input" placeholder="Tìm theo tên thành viên…"
+                  value={memSearch} onChange={(e) => setMemSearch(e.target.value)} />
+              </div>
               <div className="table-wrap">
                 <table>
                   <thead><tr><th>Thành viên</th><th>Ngày đăng ký</th></tr></thead>
                   <tbody>
-                    {detail.enrolledMembers.map((e) => (
+                    {pageMembers.map((e) => (
                       <tr key={e.id}><td>{e.memberName}</td><td>{e.enrollDate}</td></tr>
                     ))}
-                    {detail.enrolledMembers.length === 0 &&
+                    {pageMembers.length === 0 &&
                       <tr><td colSpan={2} className="empty">Chưa có thành viên.</td></tr>}
                   </tbody>
                 </table>
               </div>
+              <Pagination page={memPage} pageSize={memPageSize} total={memTotal} onPage={setMemPage} />
             </>
           )}
         </div>

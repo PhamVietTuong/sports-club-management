@@ -2,24 +2,20 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { LessonPlan, TrainingClass } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 export default function CoachLessonPlans() {
-  const [plans, setPlans] = useState<LessonPlan[]>([])
+  const { items: plans, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<LessonPlan>('/coach/lesson-plans')
   const [classes, setClasses] = useState<TrainingClass[]>([])
-  const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ classId: '', title: '', content: '' })
 
-  function load() {
-    api.get<LessonPlan[]>('/coach/lesson-plans')
-      .then((res) => setPlans(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải giáo án.')))
-  }
   useEffect(() => {
-    load()
     api.get<TrainingClass[]>('/coach/classes').then((res) => setClasses(res.data)).catch(() => {})
   }, [])
 
@@ -30,7 +26,7 @@ export default function CoachLessonPlans() {
 
   async function remove(id: number) {
     if (!window.confirm('Xóa giáo án này?')) return
-    try { await api.delete(`/coach/lesson-plans/${id}`); setFlash('Đã xóa giáo án.'); load() }
+    try { await api.delete(`/coach/lesson-plans/${id}`); setFlash('Đã xóa giáo án.'); reload() }
     catch (err) { setError(errorMessage(err)) }
   }
 
@@ -41,7 +37,7 @@ export default function CoachLessonPlans() {
       await api.post('/coach/lesson-plans', {
         classId: Number(form.classId), title: form.title, content: form.content || null,
       })
-      setOpen(false); setFlash('Đã tạo giáo án.'); load()
+      setOpen(false); setFlash('Đã tạo giáo án.'); reload()
     } catch (err) { setFormError(errorMessage(err)) } finally { setBusy(false) }
   }
 
@@ -54,6 +50,11 @@ export default function CoachLessonPlans() {
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
       {classes.length === 0 && <div className="alert alert-warning">Bạn chưa được phân lớp nào.</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo tiêu đề / lớp…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -72,6 +73,7 @@ export default function CoachLessonPlans() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={open} title="Tạo giáo án" onClose={() => { setFormError(''); setOpen(false) }}>
         <form onSubmit={submit}>

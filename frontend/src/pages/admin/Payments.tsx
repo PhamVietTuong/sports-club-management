@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { api, errorMessage } from '../../api/client'
+import { api } from '../../api/client'
 import type { Payment, Revenue } from '../../api/types'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const METHOD_LABEL: Record<string, string> = {
   CASH: 'Tiền mặt', CARD: 'Thẻ', TRANSFER: 'Chuyển khoản',
@@ -13,14 +15,12 @@ const MONTHS = ['', 'Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9
 function vnd(n: number) { return n.toLocaleString('vi-VN') }
 
 export default function Payments() {
-  const [payments, setPayments] = useState<Payment[]>([])
+  const [statusFilter, setStatusFilter] = useState('')
+  const { items: payments, total, page, pageSize, setPage, search, setSearch, error } =
+    usePaged<Payment>('/admin/payments', { status: statusFilter })
   const [revenue, setRevenue] = useState<Revenue | null>(null)
-  const [error, setError] = useState('')
 
   useEffect(() => {
-    api.get<Payment[]>('/admin/payments')
-      .then((res) => setPayments(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách thanh toán.')))
     api.get<Revenue>('/admin/payments/revenue')
       .then((res) => setRevenue(res.data))
       .catch(() => {})
@@ -73,6 +73,17 @@ export default function Payments() {
 
       <div className="card mt-4">
         <div className="card-title">Lịch sử thanh toán</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo thành viên / mô tả / phương thức…"
+            value={search} onChange={(e) => setSearch(e.target.value)} />
+          <select className="form-control filter-select" value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">Tất cả trạng thái</option>
+            <option value="COMPLETED">Hoàn tất</option>
+            <option value="PENDING">Chờ xử lý</option>
+            <option value="REFUNDED">Hoàn tiền</option>
+          </select>
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
@@ -97,6 +108,7 @@ export default function Payments() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
       </div>
     </>
   )

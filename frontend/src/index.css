@@ -572,6 +572,42 @@ tbody tr:last-child td {
   gap: 8px;
 }
 
+/* ── Table toolbar (search + filters) + pagination ──────────────────── */
+/* A left-aligned filter bar that sits just below the page header. */
+.table-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.table-toolbar .search-input {
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+.table-toolbar .filter-select {
+  flex: 0 0 auto;
+  max-width: 220px;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.pagination-controls {
+  display: flex;
+  gap: 8px;
+}
+
 /* ── Modal ──────────────────────────────────────────────────────────── */
 .modal-backdrop {
   position: fixed;

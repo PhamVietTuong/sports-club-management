@@ -140,6 +140,15 @@ public class MemberController : ControllerBase
                 return BadRequest(new MessageResponse($"Gói của bạn chỉ cho phép tối đa {pkg.MaxClasses} lớp."));
         }
 
+        // RULE 3 — a member can't attend two classes at the same time: the new
+        // class's weekly schedule must not overlap the classes they're enrolled in.
+        var clash = ScheduleClash.FindConflict(
+            await _schedules.FindByClassIdAsync(id), await _schedules.FindByMemberIdAsync(member.Id));
+        if (clash is { } sc)
+            return BadRequest(new MessageResponse(
+                $"Lớp này trùng giờ với lớp \"{sc.existing.Class?.Name}\" bạn đã đăng ký " +
+                $"({sc.incoming.DayOfWeek} {sc.incoming.StartTime:HH\\:mm}–{sc.incoming.EndTime:HH\\:mm})."));
+
         // The first class registration activates the membership and locks any
         // further cancellation/change of the package.
         if (effective.Status == "APPROVED")
@@ -239,11 +248,13 @@ public class MemberController : ControllerBase
 
     // ── Module 2: Buy membership + payment history ───────────────────────────
     [HttpGet("payments")]
-    public async Task<IActionResult> MyPayments()
+    public async Task<IActionResult> MyPayments(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         var member = await _members.FindByUserIdAsync(User.GetUserId());
         if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
-        return Ok((await _payments.FindByMemberIdAsync(member.Id)).Select(PaymentDto.From));
+        var result = await _payments.FindPagedByMemberAsync(member.Id, page, pageSize, search);
+        return Ok(result.MapIterating(PaymentDto.From));
     }
 
     // ── Membership requests (register a package → admin approves → activate) ──
@@ -274,6 +285,14 @@ public class MemberController : ControllerBase
         if (await _membershipRequests.HasOpenRequestAsync(member.Id))
             return BadRequest(new MessageResponse(
                 "Bạn đang có một yêu cầu chờ xử lý. Vui lòng hoàn tất hoặc hủy yêu cầu đó trước."));
+
+        // RULE 6 — only one active package at a time: don't allow a new package
+        // while the current membership is still valid (no overlapping memberships).
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (member.Status == "ACTIVE" && member.ExpiryDate is { } exp && exp >= today)
+            return BadRequest(new MessageResponse(
+                $"Bạn đang có gói tập còn hiệu lực đến {exp:dd/MM/yyyy}. " +
+                "Không thể đăng ký gói mới khi gói hiện tại chưa hết hạn."));
 
         await _membershipRequests.SaveAsync(new MembershipRequest
         {
@@ -421,7 +440,8 @@ public class MemberController : ControllerBase
 
     // ── Module 4: Receive lesson plans + read own progress ───────────────────
     [HttpGet("lesson-plans")]
-    public async Task<IActionResult> MyLessonPlans()
+    public async Task<IActionResult> MyLessonPlans(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         var member = await _members.FindByUserIdAsync(User.GetUserId());
         if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
@@ -429,31 +449,35 @@ public class MemberController : ControllerBase
         // Only plans for classes the member is actively enrolled in.
         var classIds = (await _enrollments.FindByMemberIdAsync(member.Id))
             .Where(e => e.Status == "ACTIVE").Select(e => e.ClassId).Distinct().ToList();
-        var plans = await _lessonPlans.FindByClassIdsAsync(classIds);
-        return Ok(plans.Select(LessonPlanDto.From));
+        var result = await _lessonPlans.FindPagedByClassIdsAsync(classIds, page, pageSize, search);
+        return Ok(result.MapIterating(LessonPlanDto.From));
     }
 
     [HttpGet("progress")]
-    public async Task<IActionResult> MyProgress()
+    public async Task<IActionResult> MyProgress(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         var member = await _members.FindByUserIdAsync(User.GetUserId());
         if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
-        return Ok((await _progress.FindByMemberIdAsync(member.Id)).Select(ProgressNoteDto.From));
+        var result = await _progress.FindPagedByMemberAsync(member.Id, page, pageSize, search);
+        return Ok(result.MapIterating(ProgressNoteDto.From));
     }
 
     // ── Module 5: Coaches list + rate a coach ────────────────────────────────
     [HttpGet("coaches")]
-    public async Task<IActionResult> Coaches()
+    public async Task<IActionResult> Coaches(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         var member = await _members.FindByUserIdAsync(User.GetUserId());
         if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
 
-        var activeCoaches = await _coaches.FindActiveAsync();
+        var paged = await _coaches.FindPagedActiveAsync(page, pageSize, search);
         var aggregates = (await _ratings.AveragesAsync()).ToDictionary(a => a.CoachId);
         var myRatings = (await _ratings.FindByMemberIdAsync(member.Id)).ToDictionary(r => r.CoachId);
         var myCoachIds = await MyCoachIdsAsync(member.Id);
 
-        var list = activeCoaches.Select(c =>
+        // ITERATOR PATTERN — traverse the page via the club iterator while mapping.
+        return Ok(paged.MapIterating(c =>
         {
             aggregates.TryGetValue(c.Id, out var agg);
             myRatings.TryGetValue(c.Id, out var mine);
@@ -461,8 +485,7 @@ public class MemberController : ControllerBase
                 c.Id, c.FullName, c.Specialization, c.Experience,
                 agg is null ? 0 : Math.Round(agg.Average, 1), agg?.Count ?? 0,
                 mine?.Rating, mine?.Comment, myCoachIds.Contains(c.Id));
-        });
-        return Ok(list);
+        }));
     }
 
     [HttpPost("coaches/{id:int}/rating")]
@@ -492,11 +515,13 @@ public class MemberController : ControllerBase
 
     // ── Module 6: Health tracking ────────────────────────────────────────────
     [HttpGet("health")]
-    public async Task<IActionResult> MyHealth()
+    public async Task<IActionResult> MyHealth(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         var member = await _members.FindByUserIdAsync(User.GetUserId());
         if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
-        return Ok((await _health.FindByMemberIdAsync(member.Id)).Select(HealthMetricDto.From));
+        var result = await _health.FindPagedByMemberAsync(member.Id, page, pageSize, search);
+        return Ok(result.MapIterating(HealthMetricDto.From));
     }
 
     [HttpPost("health")]
@@ -532,11 +557,14 @@ public class MemberController : ControllerBase
 
     // ── Module 7: PT booking ─────────────────────────────────────────────────
     [HttpGet("pt-sessions")]
-    public async Task<IActionResult> MyPtSessions()
+    public async Task<IActionResult> MyPtSessions(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null, [FromQuery] string? status = null)
     {
         var member = await _members.FindByUserIdAsync(User.GetUserId());
         if (member is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ thành viên."));
-        return Ok((await _pt.FindByMemberIdAsync(member.Id)).Select(PtSessionDto.From));
+        var result = await _pt.FindPagedByMemberAsync(member.Id, page, pageSize, search, status);
+        return Ok(result.MapIterating(PtSessionDto.From));
     }
 
     [HttpPost("pt-sessions")]
@@ -561,6 +589,14 @@ public class MemberController : ControllerBase
             return BadRequest(new MessageResponse(
                 $"HLV đang có lớp \"{classClash.Class?.Name}\" vào khung giờ này " +
                 $"({classClash.StartTime:HH\\:mm}–{classClash.EndTime:HH\\:mm}). Vui lòng chọn giờ khác."));
+
+        // RULE 4 — the PT slot must not overlap a class the member has registered for.
+        var myClassClash = ScheduleClash.FindClassClash(
+            req.SessionDate, start, end, await _schedules.FindByMemberIdAsync(member.Id));
+        if (myClassClash is not null)
+            return BadRequest(new MessageResponse(
+                $"Khung giờ này trùng với lớp \"{myClassClash.Class?.Name}\" bạn đã đăng ký " +
+                $"({myClassClash.StartTime:HH\\:mm}–{myClassClash.EndTime:HH\\:mm})."));
 
         await _pt.SaveAsync(new PtSession
         {

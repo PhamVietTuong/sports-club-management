@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportsClub.Api.Data;
+using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
 
 namespace SportsClub.Api.Repositories;
@@ -12,6 +13,18 @@ public class ClassRepository
 
     public Task<List<TrainingClass>> FindAllAsync() =>
         _db.TrainingClasses.Include(c => c.Coach).OrderBy(c => c.Id).ToListAsync();
+
+    /// <summary>One page of classes, filtered by a name/level search.</summary>
+    public Task<PagedResult<TrainingClass>> FindPagedAsync(int page, int pageSize, string? search)
+    {
+        var q = _db.TrainingClasses.Include(c => c.Coach).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(c => c.Name.Contains(s) || (c.Level != null && c.Level.Contains(s)));
+        }
+        return q.OrderBy(c => c.Id).ToPagedResultAsync(page, pageSize);
+    }
 
     public Task<List<TrainingClass>> FindActiveAsync() =>
         _db.TrainingClasses.Include(c => c.Coach).Where(c => c.IsActive)

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportsClub.Api.Data;
+using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
 
 namespace SportsClub.Api.Repositories;
@@ -13,6 +14,20 @@ public class ScheduleRepository
     public Task<List<Schedule>> FindAllAsync() =>
         _db.Schedules.Include(s => s.Class).OrderBy(s => s.Id).ToListAsync();
 
+    /// <summary>One page of schedules, filtered by class name / room / day search.</summary>
+    public Task<PagedResult<Schedule>> FindPagedAsync(int page, int pageSize, string? search)
+    {
+        var q = _db.Schedules.Include(s => s.Class).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(x => x.Class.Name.Contains(s)
+                             || x.DayOfWeek.Contains(s)
+                             || (x.Room != null && x.Room.Contains(s)));
+        }
+        return q.OrderBy(s => s.Id).ToPagedResultAsync(page, pageSize);
+    }
+
     public Task<List<Schedule>> FindByClassIdAsync(int classId) =>
         _db.Schedules.Include(s => s.Class).Where(s => s.ClassId == classId).ToListAsync();
 
@@ -22,6 +37,10 @@ public class ScheduleRepository
     public Task<List<Schedule>> FindByCoachIdAsync(int coachId) =>
         _db.Schedules.Include(s => s.Class)
             .Where(s => s.Class.CoachId == coachId).ToListAsync();
+
+    /// <summary>All slots booked in a given room (any class) — for room-clash checks.</summary>
+    public Task<List<Schedule>> FindByRoomAsync(string room) =>
+        _db.Schedules.Include(s => s.Class).Where(s => s.Room == room).ToListAsync();
 
     public Task<List<Schedule>> FindByMemberIdAsync(int memberId) =>
         (from s in _db.Schedules.Include(s => s.Class)

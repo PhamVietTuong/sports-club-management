@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { TrainingClass, TrainingPackage } from '../../api/types'
+import type { Paged, TrainingClass, TrainingPackage } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 interface PkgForm {
   id: number
@@ -18,8 +20,8 @@ const emptyForm: PkgForm = {
 }
 
 export default function Packages() {
-  const [packages, setPackages] = useState<TrainingPackage[]>([])
-  const [error, setError] = useState('')
+  const { items: packages, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<TrainingPackage>('/admin/packages')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
@@ -30,14 +32,9 @@ export default function Packages() {
   const [classModal, setClassModal] = useState<TrainingPackage | null>(null)
   const [selectedClassIds, setSelectedClassIds] = useState<number[]>([])
 
-  function load() {
-    api.get<TrainingPackage[]>('/admin/packages')
-      .then((res) => setPackages(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách gói tập.')))
-  }
-  useEffect(load, [])
   useEffect(() => {
-    api.get<TrainingClass[]>('/admin/classes').then((res) => setAllClasses(res.data)).catch(() => {})
+    api.get<Paged<TrainingClass>>('/admin/classes?pageSize=1000')
+      .then((res) => setAllClasses(res.data.items)).catch(() => {})
   }, [])
 
   async function openClasses(p: TrainingPackage) {
@@ -73,7 +70,7 @@ export default function Packages() {
   }
 
   async function clone(id: number) {
-    try { await api.post(`/admin/packages/${id}/clone`); setFlash('Đã nhân bản gói tập (+20% giá).'); load() }
+    try { await api.post(`/admin/packages/${id}/clone`); setFlash('Đã nhân bản gói tập (+20% giá).'); reload() }
     catch (err) { setError(errorMessage(err)) }
   }
 
@@ -87,7 +84,7 @@ export default function Packages() {
     try {
       if (form.id) await api.put(`/admin/packages/${form.id}`, body)
       else await api.post('/admin/packages', body)
-      setOpen(false); setFlash(form.id ? 'Đã cập nhật gói tập.' : 'Đã thêm gói tập.'); load()
+      setOpen(false); setFlash(form.id ? 'Đã cập nhật gói tập.' : 'Đã thêm gói tập.'); reload()
     } catch (err) { setError(errorMessage(err)) } finally { setBusy(false) }
   }
 
@@ -100,6 +97,11 @@ export default function Packages() {
 
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo tên / mô tả…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -133,6 +135,7 @@ export default function Packages() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={open} title={form.id ? 'Sửa gói tập' : 'Thêm gói tập'} onClose={() => setOpen(false)}>
         <form onSubmit={submit}>

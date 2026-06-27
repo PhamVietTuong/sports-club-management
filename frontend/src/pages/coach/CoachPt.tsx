@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { PtSession } from '../../api/types'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const PT_STATUS: Record<string, { label: string; badge: string }> = {
   PENDING: { label: 'Chờ xác nhận', badge: 'badge-review' },
@@ -10,22 +12,16 @@ const PT_STATUS: Record<string, { label: string; badge: string }> = {
 }
 
 export default function CoachPt() {
-  const [sessions, setSessions] = useState<PtSession[]>([])
-  const [error, setError] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const { items: sessions, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<PtSession>('/coach/pt-sessions', { status: statusFilter })
   const [flash, setFlash] = useState('')
-
-  function load() {
-    api.get<PtSession[]>('/coach/pt-sessions')
-      .then((res) => setSessions(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải lịch PT.')))
-  }
-  useEffect(load, [])
 
   async function setStatus(id: number, status: string) {
     setError(''); setFlash('')
     try {
       await api.post(`/coach/pt-sessions/${id}/status`, { status })
-      setFlash('Đã cập nhật lịch PT.'); load()
+      setFlash('Đã cập nhật lịch PT.'); reload()
     } catch (err) { setError(errorMessage(err)) }
   }
 
@@ -34,6 +30,19 @@ export default function CoachPt() {
       <div className="page-header"><h1>Lịch PT</h1></div>
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo học viên…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className="form-control filter-select" value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Tất cả trạng thái</option>
+          <option value="PENDING">Chờ xác nhận</option>
+          <option value="CONFIRMED">Đã xác nhận</option>
+          <option value="COMPLETED">Hoàn thành</option>
+          <option value="CANCELLED">Đã hủy</option>
+        </select>
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -62,6 +71,7 @@ export default function CoachPt() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
     </>
   )
 }

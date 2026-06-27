@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { ClassChangeRequest } from '../../api/types'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const ACTION_LABEL: Record<string, string> = { CLAIM: 'Nhận lớp', RELEASE: 'Trả lớp' }
 const STATUS_LABEL: Record<string, string> = {
@@ -12,24 +14,16 @@ const STATUS_BADGE: Record<string, string> = {
 const FILTERS = ['', 'PENDING', 'APPROVED', 'REJECTED']
 
 export default function ClassRequests() {
-  const [requests, setRequests] = useState<ClassChangeRequest[]>([])
   const [status, setStatus] = useState('PENDING')
-  const [error, setError] = useState('')
+  const { items: requests, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<ClassChangeRequest>('/admin/class-requests', { status })
   const [flash, setFlash] = useState('')
-
-  function load() {
-    const q = status ? `?status=${status}` : ''
-    api.get<ClassChangeRequest[]>(`/admin/class-requests${q}`)
-      .then((res) => setRequests(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách yêu cầu.')))
-  }
-  useEffect(load, [status])
 
   async function approve(id: number) {
     setError(''); setFlash('')
     try {
       const res = await api.post<{ message: string }>(`/admin/class-requests/${id}/approve`)
-      setFlash(res.data.message); load()
+      setFlash(res.data.message); reload()
     } catch (err) { setError(errorMessage(err)) }
   }
   async function reject(id: number) {
@@ -37,7 +31,7 @@ export default function ClassRequests() {
     setError(''); setFlash('')
     try {
       const res = await api.post<{ message: string }>(`/admin/class-requests/${id}/reject`, { note })
-      setFlash(res.data.message); load()
+      setFlash(res.data.message); reload()
     } catch (err) { setError(errorMessage(err)) }
   }
 
@@ -47,9 +41,10 @@ export default function ClassRequests() {
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
 
-      <div className="form-group" style={{ maxWidth: 240 }}>
-        <label className="form-label">Lọc theo trạng thái</label>
-        <select className="form-control" value={status} onChange={(e) => setStatus(e.target.value)}>
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo HLV / lớp…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className="form-control filter-select" value={status} onChange={(e) => setStatus(e.target.value)}>
           {FILTERS.map((f) => (
             <option key={f} value={f}>{f ? (STATUS_LABEL[f] ?? f) : 'Tất cả'}</option>
           ))}
@@ -89,6 +84,7 @@ export default function ClassRequests() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
     </>
   )
 }

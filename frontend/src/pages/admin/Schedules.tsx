@@ -1,30 +1,27 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { Schedule, TrainingClass } from '../../api/types'
+import type { Paged, Schedule, TrainingClass } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 
 const emptyForm = { id: 0, classId: '', dayOfWeek: 'MONDAY', startTime: '07:00', endTime: '08:00', room: '' }
 
 export default function Schedules() {
-  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const { items: schedules, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<Schedule>('/admin/schedules')
   const [classes, setClasses] = useState<TrainingClass[]>([])
-  const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
 
-  function load() {
-    api.get<Schedule[]>('/admin/schedules')
-      .then((res) => setSchedules(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải lịch tập.')))
-  }
-  useEffect(load, [])
   useEffect(() => {
-    api.get<TrainingClass[]>('/admin/classes').then((res) => setClasses(res.data)).catch(() => {})
+    api.get<Paged<TrainingClass>>('/admin/classes?pageSize=1000')
+      .then((res) => setClasses(res.data.items)).catch(() => {})
   }, [])
 
   function openAdd() { setForm(emptyForm); setFormError(''); setOpen(true) }
@@ -37,12 +34,12 @@ export default function Schedules() {
   }
 
   async function clone(id: number) {
-    try { await api.post(`/admin/schedules/${id}/clone`); setFlash('Đã nhân bản lịch tập.'); load() }
+    try { await api.post(`/admin/schedules/${id}/clone`); setFlash('Đã nhân bản lịch tập.'); reload() }
     catch (err) { setError(errorMessage(err)) }
   }
   async function remove(id: number) {
     if (!confirm('Xóa lịch tập này?')) return
-    try { await api.delete(`/admin/schedules/${id}`); setFlash('Đã xóa lịch tập.'); load() }
+    try { await api.delete(`/admin/schedules/${id}`); setFlash('Đã xóa lịch tập.'); reload() }
     catch (err) { setError(errorMessage(err)) }
   }
 
@@ -58,7 +55,7 @@ export default function Schedules() {
       if (form.id) await api.put(`/admin/schedules/${form.id}`, body)
       else await api.post('/admin/schedules', body)
       setOpen(false); setFlash(form.id ? 'Đã cập nhật lịch tập.' : 'Đã thêm lịch tập.')
-      setForm(emptyForm); load()
+      setForm(emptyForm); reload()
     } catch (err) {
       // Show conflict / validation errors inside the dialog, keeping it open.
       setFormError(errorMessage(err))
@@ -74,6 +71,11 @@ export default function Schedules() {
 
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo lớp / phòng / ngày…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -100,6 +102,7 @@ export default function Schedules() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={open} title={form.id ? 'Sửa lịch tập' : 'Thêm lịch tập'} onClose={() => setOpen(false)}>
         <form onSubmit={submit}>

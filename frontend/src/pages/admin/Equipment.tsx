@@ -1,7 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { Equipment } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const STATUS_LABEL: Record<string, string> = {
   AVAILABLE: 'Sẵn sàng',
@@ -31,22 +33,14 @@ const emptyForm: EquipForm = {
 }
 
 export default function EquipmentPage() {
-  const [items, setItems] = useState<Equipment[]>([])
   const [statusFilter, setStatusFilter] = useState('')
-  const [error, setError] = useState('')
+  const { items, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<Equipment>('/admin/equipment', { status: statusFilter })
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<EquipForm>(emptyForm)
-
-  function load() {
-    const q = statusFilter ? `?status=${statusFilter}` : ''
-    api.get<Equipment[]>('/admin/equipment' + q)
-      .then((res) => setItems(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách thiết bị.')))
-  }
-  useEffect(load, [statusFilter])
 
   function openAdd() { setForm(emptyForm); setFormError(''); setOpen(true) }
   function openEdit(e: Equipment) {
@@ -59,7 +53,7 @@ export default function EquipmentPage() {
 
   async function remove(id: number) {
     if (!window.confirm('Xóa thiết bị này?')) return
-    try { await api.delete(`/admin/equipment/${id}`); setFlash('Đã xóa thiết bị.'); load() }
+    try { await api.delete(`/admin/equipment/${id}`); setFlash('Đã xóa thiết bị.'); reload() }
     catch (err) { setError(errorMessage(err)) }
   }
 
@@ -73,7 +67,7 @@ export default function EquipmentPage() {
     try {
       if (form.id) await api.put(`/admin/equipment/${form.id}`, body)
       else await api.post('/admin/equipment', body)
-      setOpen(false); setFlash(form.id ? 'Đã cập nhật thiết bị.' : 'Đã thêm thiết bị.'); load()
+      setOpen(false); setFlash(form.id ? 'Đã cập nhật thiết bị.' : 'Đã thêm thiết bị.'); reload()
     } catch (err) { setFormError(errorMessage(err)) } finally { setBusy(false) }
   }
 
@@ -81,21 +75,24 @@ export default function EquipmentPage() {
     <>
       <div className="page-header">
         <h1>Thiết bị</h1>
-        <div className="toolbar">
-          <select className="form-control" value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">Tất cả trạng thái</option>
-            <option value="AVAILABLE">Sẵn sàng</option>
-            <option value="IN_USE">Đang dùng</option>
-            <option value="MAINTENANCE">Bảo trì</option>
-            <option value="RETIRED">Ngừng dùng</option>
-          </select>
-          <button className="btn btn-primary" onClick={openAdd}>+ Thêm thiết bị</button>
-        </div>
+        <button className="btn btn-primary" onClick={openAdd}>+ Thêm thiết bị</button>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo tên / nhóm…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className="form-control filter-select" value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Tất cả trạng thái</option>
+          <option value="AVAILABLE">Sẵn sàng</option>
+          <option value="IN_USE">Đang dùng</option>
+          <option value="MAINTENANCE">Bảo trì</option>
+          <option value="RETIRED">Ngừng dùng</option>
+        </select>
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -128,6 +125,7 @@ export default function EquipmentPage() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={open} title={form.id ? 'Sửa thiết bị' : 'Thêm thiết bị'} onClose={() => { setFormError(''); setOpen(false) }}>
         <form onSubmit={submit}>

@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { Member, TrainingPackage } from '../../api/types'
+import type { Member, Paged, TrainingPackage } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const STATUS_BADGE: Record<string, string> = {
   ACTIVE: 'badge-active',
@@ -15,32 +17,25 @@ const emptyForm = {
 }
 
 export default function Members() {
-  const [members, setMembers] = useState<Member[]>([])
-  const [packages, setPackages] = useState<TrainingPackage[]>([])
   const [statusFilter, setStatusFilter] = useState('')
-  const [error, setError] = useState('')
+  const { items: members, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<Member>('/admin/members', { status: statusFilter })
+  const [packages, setPackages] = useState<TrainingPackage[]>([])
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [busy, setBusy] = useState(false)
 
-  function load() {
-    const q = statusFilter ? `?status=${statusFilter}` : ''
-    api.get<Member[]>('/admin/members' + q)
-      .then((res) => setMembers(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách thành viên.')))
-  }
-
-  useEffect(load, [statusFilter])
   useEffect(() => {
-    api.get<TrainingPackage[]>('/admin/packages').then((res) => setPackages(res.data)).catch(() => {})
+    api.get<Paged<TrainingPackage>>('/admin/packages?pageSize=1000')
+      .then((res) => setPackages(res.data.items)).catch(() => {})
   }, [])
 
   async function changeStatus(id: number, status: string) {
     try {
       await api.patch(`/admin/members/${id}/status`, { status })
-      load()
+      reload()
     } catch (err) {
       setError(errorMessage(err))
     }
@@ -66,7 +61,7 @@ export default function Members() {
       setOpen(false)
       setForm(emptyForm)
       setFlash('Đã thêm thành viên.')
-      load()
+      reload()
     } catch (err) {
       setFormError(errorMessage(err))
     } finally {
@@ -78,20 +73,23 @@ export default function Members() {
     <>
       <div className="page-header">
         <h1>Thành viên</h1>
-        <div className="toolbar">
-          <select className="form-control" value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">Hoạt Động</option>
-            <option value="INACTIVE">Không Hoạt Động</option>
-            <option value="SUSPENDED">Tạm Ngưng</option>
-          </select>
-          <button className="btn btn-primary" onClick={() => { setFormError(''); setOpen(true) }}>+ Thêm thành viên</button>
-        </div>
+        <button className="btn btn-primary" onClick={() => { setFormError(''); setOpen(true) }}>+ Thêm thành viên</button>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo tên / tài khoản / email…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className="form-control filter-select" value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Tất cả trạng thái</option>
+          <option value="ACTIVE">Hoạt Động</option>
+          <option value="INACTIVE">Không Hoạt Động</option>
+          <option value="SUSPENDED">Tạm Ngưng</option>
+        </select>
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -127,6 +125,7 @@ export default function Members() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={open} title="Thêm thành viên" onClose={() => { setFormError(''); setOpen(false) }}>
         <form onSubmit={submit}>

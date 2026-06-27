@@ -23,11 +23,13 @@ public class AdminMembershipRequestsController : ControllerBase
     public AdminMembershipRequestsController(MembershipRequestRepository requests) => _requests = requests;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<MembershipRequestDto>>> List([FromQuery] string? status)
+    public async Task<ActionResult<PagedResult<MembershipRequestDto>>> List(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null, [FromQuery] string? status = null)
     {
-        // ITERATOR PATTERN — traverse requests via the club iterator
-        var requests = ClubCollection<MembershipRequest>.Of(await _requests.FindAllAsync(status));
-        return Ok(requests.Select(MembershipRequestDto.From));
+        var result = await _requests.FindPagedAsync(page, pageSize, search, status);
+        // ITERATOR PATTERN — traverse the page via the club iterator while mapping.
+        return Ok(result.MapIterating(MembershipRequestDto.From));
     }
 
     [HttpPost("{id:int}/approve")]

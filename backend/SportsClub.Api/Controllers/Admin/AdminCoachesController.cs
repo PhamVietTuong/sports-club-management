@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
+using SportsClub.Api.Patterns.Iterator;
 using SportsClub.Api.Repositories;
 using SportsClub.Api.Services;
 
@@ -22,12 +23,13 @@ public class AdminCoachesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<CoachDto>>> List([FromQuery] string? status)
+    public async Task<ActionResult<PagedResult<CoachDto>>> List(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null, [FromQuery] string? status = null)
     {
-        var source = string.IsNullOrEmpty(status)
-            ? await _coaches.FindAllAsync()
-            : await _coaches.FindByStatusAsync(status);
-        return Ok(source.Select(CoachDto.From));
+        var result = await _coaches.FindPagedAsync(page, pageSize, search, status);
+        // ITERATOR PATTERN — traverse the page via the club iterator while mapping.
+        return Ok(result.MapIterating(CoachDto.From));
     }
 
     [HttpPost]

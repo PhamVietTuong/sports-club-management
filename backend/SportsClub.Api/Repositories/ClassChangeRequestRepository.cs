@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportsClub.Api.Data;
+using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
 
 namespace SportsClub.Api.Repositories;
@@ -10,6 +11,25 @@ public class ClassChangeRequestRepository
 {
     private readonly AppDbContext _db;
     public ClassChangeRequestRepository(AppDbContext db) => _db = db;
+
+    /// <summary>One page of requests, filtered by status and a coach-name /
+    /// class-name search.</summary>
+    public Task<PagedResult<ClassChangeRequest>> FindPagedAsync(
+        int page, int pageSize, string? search, string? status)
+    {
+        var q = _db.ClassChangeRequests
+            .Include(r => r.Coach)
+            .Include(r => r.Class)
+            .AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status))
+            q = q.Where(r => r.Status == status);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(r => r.Coach.FullName.Contains(s) || r.Class.Name.Contains(s));
+        }
+        return q.OrderByDescending(r => r.RequestedAt).ToPagedResultAsync(page, pageSize);
+    }
 
     public Task<List<ClassChangeRequest>> FindAllAsync(string? status) =>
         _db.ClassChangeRequests

@@ -2,6 +2,14 @@
 
 export type Role = 'ADMIN' | 'COACH' | 'MEMBER'
 
+/** A page of a larger result set, returned by paginated list endpoints. */
+export interface Paged<T> {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 export interface AuthResponse {
   token: string
   expiresAt: string

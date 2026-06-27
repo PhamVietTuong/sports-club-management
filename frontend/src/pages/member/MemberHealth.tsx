@@ -1,33 +1,28 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { HealthMetric } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 function today() { return new Date().toISOString().slice(0, 10) }
 
 const emptyForm = { recordedDate: today(), weightKg: '', heightCm: '', bodyFatPct: '', notes: '' }
 
 export default function MemberHealth() {
-  const [metrics, setMetrics] = useState<HealthMetric[]>([])
-  const [error, setError] = useState('')
+  const { items: metrics, total, page, pageSize, setPage, search, setSearch, error, setError, reload } =
+    usePaged<HealthMetric>('/member/health')
   const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
 
-  function load() {
-    api.get<HealthMetric[]>('/member/health')
-      .then((res) => setMetrics(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải chỉ số sức khỏe.')))
-  }
-  useEffect(load, [])
-
   function openAdd() { setForm({ ...emptyForm, recordedDate: today() }); setFormError(''); setOpen(true) }
 
   async function remove(id: number) {
     if (!window.confirm('Xóa bản ghi này?')) return
-    try { await api.delete(`/member/health/${id}`); setFlash('Đã xóa bản ghi.'); load() }
+    try { await api.delete(`/member/health/${id}`); setFlash('Đã xóa bản ghi.'); reload() }
     catch (err) { setError(errorMessage(err)) }
   }
 
@@ -42,7 +37,7 @@ export default function MemberHealth() {
         bodyFatPct: form.bodyFatPct ? Number(form.bodyFatPct) : null,
         notes: form.notes || null,
       })
-      setOpen(false); setFlash('Đã lưu chỉ số sức khỏe.'); load()
+      setOpen(false); setFlash('Đã lưu chỉ số sức khỏe.'); reload()
     } catch (err) { setFormError(errorMessage(err)) } finally { setBusy(false) }
   }
 
@@ -54,6 +49,11 @@ export default function MemberHealth() {
       </div>
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
+
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo ghi chú…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
 
       <div className="table-wrap">
         <table>
@@ -75,6 +75,7 @@ export default function MemberHealth() {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
 
       <Modal open={open} title="Thêm chỉ số sức khỏe" onClose={() => { setFormError(''); setOpen(false) }}>
         <form onSubmit={submit}>

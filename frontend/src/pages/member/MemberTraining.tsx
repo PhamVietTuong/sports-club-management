@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
-import { api, errorMessage } from '../../api/client'
+import { api } from '../../api/client'
 import type { Attendance, LessonPlan, ProgressNote } from '../../api/types'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
+import { useClientPaged } from '../../hooks/useClientPaged'
 
 const ATT_LABEL: Record<string, string> = { PRESENT: 'Có mặt', ABSENT: 'Vắng', LATE: 'Muộn' }
 const ATT_BADGE: Record<string, string> = {
@@ -8,16 +11,22 @@ const ATT_BADGE: Record<string, string> = {
 }
 
 export default function MemberTraining() {
-  const [plans, setPlans] = useState<LessonPlan[]>([])
-  const [notes, setNotes] = useState<ProgressNote[]>([])
+  const {
+    items: plans, total: plansTotal, page: plansPage, pageSize: plansPageSize,
+    setPage: setPlansPage, search: plansSearch, setSearch: setPlansSearch, error,
+  } = usePaged<LessonPlan>('/member/lesson-plans')
+  const {
+    items: notes, total: notesTotal, page: notesPage, pageSize: notesPageSize,
+    setPage: setNotesPage, search: notesSearch, setSearch: setNotesSearch,
+  } = usePaged<ProgressNote>('/member/progress')
   const [attendance, setAttendance] = useState<Attendance[]>([])
-  const [error, setError] = useState('')
+  const {
+    pageItems: pageAttendance, total: attTotal, page: attPage, pageSize: attPageSize,
+    setPage: setAttPage, search: attSearch, setSearch: setAttSearch,
+  } = useClientPaged(attendance, (a, q) =>
+    a.className.toLowerCase().includes(q) || a.status.toLowerCase().includes(q))
 
   useEffect(() => {
-    api.get<LessonPlan[]>('/member/lesson-plans')
-      .then((res) => setPlans(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải dữ liệu tập luyện.')))
-    api.get<ProgressNote[]>('/member/progress').then((res) => setNotes(res.data)).catch(() => {})
     api.get<Attendance[]>('/member/attendance').then((res) => setAttendance(res.data)).catch(() => {})
   }, [])
 
@@ -28,6 +37,10 @@ export default function MemberTraining() {
 
       <div className="card">
         <div className="card-title">Giáo án từ huấn luyện viên</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo tiêu đề / lớp…"
+            value={plansSearch} onChange={(e) => setPlansSearch(e.target.value)} />
+        </div>
         {plans.length === 0 ? (
           <p className="text-muted">Chưa có giáo án cho lớp bạn đang theo học.</p>
         ) : (
@@ -38,10 +51,15 @@ export default function MemberTraining() {
             </div>
           ))
         )}
+        <Pagination page={plansPage} pageSize={plansPageSize} total={plansTotal} onPage={setPlansPage} />
       </div>
 
       <div className="card mt-4">
         <div className="card-title">Đánh giá tiến độ của tôi</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo nội dung…"
+            value={notesSearch} onChange={(e) => setNotesSearch(e.target.value)} />
+        </div>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Nội dung</th><th>Điểm</th><th>Ngày</th></tr></thead>
@@ -57,15 +75,20 @@ export default function MemberTraining() {
             </tbody>
           </table>
         </div>
+        <Pagination page={notesPage} pageSize={notesPageSize} total={notesTotal} onPage={setNotesPage} />
       </div>
 
       <div className="card mt-4">
         <div className="card-title">Lịch sử điểm danh</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo lớp / trạng thái…"
+            value={attSearch} onChange={(e) => setAttSearch(e.target.value)} />
+        </div>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Lớp</th><th>Ngày</th><th>Trạng thái</th></tr></thead>
             <tbody>
-              {attendance.map((a) => (
+              {pageAttendance.map((a) => (
                 <tr key={a.id}>
                   <td>{a.className}</td>
                   <td>{a.sessionDate}</td>
@@ -76,10 +99,11 @@ export default function MemberTraining() {
                   </td>
                 </tr>
               ))}
-              {attendance.length === 0 && <tr><td colSpan={3} className="empty">Chưa có lịch sử điểm danh.</td></tr>}
+              {pageAttendance.length === 0 && <tr><td colSpan={3} className="empty">Chưa có lịch sử điểm danh.</td></tr>}
             </tbody>
           </table>
         </div>
+        <Pagination page={attPage} pageSize={attPageSize} total={attTotal} onPage={setAttPage} />
       </div>
     </>
   )

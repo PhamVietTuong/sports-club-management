@@ -32,11 +32,13 @@ public class AdminClassRequestsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ClassChangeRequestDto>>> List([FromQuery] string? status)
+    public async Task<ActionResult<PagedResult<ClassChangeRequestDto>>> List(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null, [FromQuery] string? status = null)
     {
-        // ITERATOR PATTERN — traverse requests via the club iterator
-        var requests = ClubCollection<ClassChangeRequest>.Of(await _requests.FindAllAsync(status));
-        return Ok(requests.Select(ClassChangeRequestDto.From));
+        var result = await _requests.FindPagedAsync(page, pageSize, search, status);
+        // ITERATOR PATTERN — traverse the page via the club iterator while mapping.
+        return Ok(result.MapIterating(ClassChangeRequestDto.From));
     }
 
     [HttpPost("{id:int}/approve")]

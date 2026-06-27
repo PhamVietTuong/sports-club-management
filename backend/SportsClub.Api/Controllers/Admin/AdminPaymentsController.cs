@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
+using SportsClub.Api.Patterns.Iterator;
 using SportsClub.Api.Repositories;
 
 namespace SportsClub.Api.Controllers.Admin;
@@ -16,8 +17,14 @@ public class AdminPaymentsController : ControllerBase
     public AdminPaymentsController(PaymentRepository payments) => _payments = payments;
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PaymentDto>>> List() =>
-        Ok((await _payments.FindAllAsync()).Select(PaymentDto.From));
+    public async Task<ActionResult<PagedResult<PaymentDto>>> List(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null, [FromQuery] string? status = null)
+    {
+        var result = await _payments.FindPagedAsync(page, pageSize, search, status);
+        // ITERATOR PATTERN — traverse the page via the club iterator while mapping.
+        return Ok(result.MapIterating(PaymentDto.From));
+    }
 
     /// <summary>Revenue overview — all-time total plus a per-month breakdown.</summary>
     [HttpGet("revenue")]

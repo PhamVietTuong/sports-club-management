@@ -23,15 +23,13 @@ public class AdminMembersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<MemberDto>>> List([FromQuery] string? status)
+    public async Task<ActionResult<PagedResult<MemberDto>>> List(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null, [FromQuery] string? status = null)
     {
-        var source = string.IsNullOrEmpty(status)
-            ? await _members.FindAllAsync()
-            : await _members.FindByStatusAsync(status);
-
-        // ITERATOR PATTERN — traverse members via the club iterator
-        var members = ClubCollection<Member>.Of(source);
-        return Ok(members.Select(MemberDto.From));
+        var result = await _members.FindPagedAsync(page, pageSize, search, status);
+        // ITERATOR PATTERN — traverse the page via the club iterator while mapping.
+        return Ok(result.MapIterating(MemberDto.From));
     }
 
     [HttpPost]

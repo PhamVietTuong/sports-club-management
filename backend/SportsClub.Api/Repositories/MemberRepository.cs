@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportsClub.Api.Data;
+using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
 
 namespace SportsClub.Api.Repositories;
@@ -13,6 +14,23 @@ public class MemberRepository
     public Task<List<Member>> FindAllAsync() =>
         _db.Members.Include(m => m.User)
             .OrderByDescending(m => m.JoinDate).ToListAsync();
+
+    /// <summary>One page of members, filtered by status and a free-text search
+    /// over name / username / email.</summary>
+    public Task<PagedResult<Member>> FindPagedAsync(int page, int pageSize, string? search, string? status)
+    {
+        var q = _db.Members.Include(m => m.User).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status))
+            q = q.Where(m => m.Status == status);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(m => m.FullName.Contains(s)
+                             || m.User.Username.Contains(s)
+                             || m.User.Email.Contains(s));
+        }
+        return q.OrderByDescending(m => m.JoinDate).ToPagedResultAsync(page, pageSize);
+    }
 
     public Task<List<Member>> FindByStatusAsync(string status) =>
         _db.Members.Include(m => m.User)

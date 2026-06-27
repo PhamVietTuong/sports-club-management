@@ -146,11 +146,13 @@ public class CoachController : ControllerBase
 
     // ── Module 4: Lesson plans + progress notes ──────────────────────────────
     [HttpGet("lesson-plans")]
-    public async Task<IActionResult> MyLessonPlans()
+    public async Task<IActionResult> MyLessonPlans(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         var coach = await _coaches.FindByUserIdAsync(User.GetUserId());
         if (coach is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ huấn luyện viên."));
-        return Ok((await _lessonPlans.FindByCoachIdAsync(coach.Id)).Select(LessonPlanDto.From));
+        var result = await _lessonPlans.FindPagedByCoachAsync(coach.Id, page, pageSize, search);
+        return Ok(result.MapIterating(LessonPlanDto.From));
     }
 
     [HttpPost("lesson-plans")]
@@ -186,11 +188,13 @@ public class CoachController : ControllerBase
     }
 
     [HttpGet("progress")]
-    public async Task<IActionResult> MyProgressNotes()
+    public async Task<IActionResult> MyProgressNotes(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
     {
         var coach = await _coaches.FindByUserIdAsync(User.GetUserId());
         if (coach is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ huấn luyện viên."));
-        return Ok((await _progress.FindByCoachIdAsync(coach.Id)).Select(ProgressNoteDto.From));
+        var result = await _progress.FindPagedByCoachAsync(coach.Id, page, pageSize, search);
+        return Ok(result.MapIterating(ProgressNoteDto.From));
     }
 
     [HttpPost("progress")]
@@ -240,11 +244,14 @@ public class CoachController : ControllerBase
 
     // ── Module 7: PT sessions booked with me ─────────────────────────────────
     [HttpGet("pt-sessions")]
-    public async Task<IActionResult> MyPtSessions()
+    public async Task<IActionResult> MyPtSessions(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null, [FromQuery] string? status = null)
     {
         var coach = await _coaches.FindByUserIdAsync(User.GetUserId());
         if (coach is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ huấn luyện viên."));
-        return Ok((await _pt.FindByCoachIdAsync(coach.Id)).Select(PtSessionDto.From));
+        var result = await _pt.FindPagedByCoachAsync(coach.Id, page, pageSize, search, status);
+        return Ok(result.MapIterating(PtSessionDto.From));
     }
 
     [HttpPost("pt-sessions/{id:int}/status")]
@@ -269,6 +276,14 @@ public class CoachController : ControllerBase
                 return BadRequest(new MessageResponse(
                     $"Không thể xác nhận — trùng lớp \"{classClash.Class?.Name}\" " +
                     $"({classClash.StartTime:HH\\:mm}–{classClash.EndTime:HH\\:mm}) cùng khung giờ."));
+
+            // RULE 5 — a coach can't have two confirmed PT sessions at the same time.
+            var ptClash = (await _pt.FindByCoachIdAsync(coach.Id)).Any(p =>
+                p.Id != s.Id && p.Status == "CONFIRMED" && p.SessionDate == s.SessionDate
+                && ScheduleClash.TimesOverlap(p.StartTime, p.EndTime, s.StartTime, s.EndTime));
+            if (ptClash)
+                return BadRequest(new MessageResponse(
+                    "Bạn đã có một buổi PT khác đã xác nhận trùng khung giờ này."));
         }
 
         await _pt.UpdateStatusAsync(s, req.Status);

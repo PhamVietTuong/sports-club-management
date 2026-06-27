@@ -1,7 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { PtSession, RateableCoach } from '../../api/types'
 import Modal from '../../components/Modal'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
 
 const PT_STATUS: Record<string, { label: string; badge: string }> = {
   PENDING: { label: 'Chờ xác nhận', badge: 'badge-review' },
@@ -14,9 +16,15 @@ function stars(n: number) { return '★'.repeat(Math.round(n)) + '☆'.repeat(5 
 function today() { return new Date().toISOString().slice(0, 10) }
 
 export default function MemberCoaches() {
-  const [coaches, setCoaches] = useState<RateableCoach[]>([])
-  const [sessions, setSessions] = useState<PtSession[]>([])
-  const [error, setError] = useState('')
+  const {
+    items: coaches, total: coachesTotal, page: coachesPage, pageSize: coachesPageSize,
+    setPage: setCoachesPage, search: coachesSearch, setSearch: setCoachesSearch,
+    error, setError, reload: reloadCoaches,
+  } = usePaged<RateableCoach>('/member/coaches')
+  const {
+    items: sessions, total: sessTotal, page: sessPage, pageSize: sessPageSize,
+    setPage: setSessPage, reload: reloadSessions,
+  } = usePaged<PtSession>('/member/pt-sessions')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -28,13 +36,7 @@ export default function MemberCoaches() {
   const [bookForm, setBookForm] = useState({ sessionDate: today(), startTime: '08:00', endTime: '09:00', notes: '' })
   const [bookError, setBookError] = useState('')
 
-  function load() {
-    api.get<RateableCoach[]>('/member/coaches')
-      .then((res) => setCoaches(res.data))
-      .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách huấn luyện viên.')))
-    api.get<PtSession[]>('/member/pt-sessions').then((res) => setSessions(res.data)).catch(() => {})
-  }
-  useEffect(load, [])
+  function load() { reloadCoaches(); reloadSessions() }
 
   function openRate(c: RateableCoach) {
     setRateFor(c)
@@ -83,6 +85,11 @@ export default function MemberCoaches() {
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
 
+      <div className="table-toolbar">
+        <input className="form-control search-input" placeholder="Tìm theo tên / chuyên môn…"
+          value={coachesSearch} onChange={(e) => setCoachesSearch(e.target.value)} />
+      </div>
+
       <div className="table-wrap">
         <table>
           <thead>
@@ -110,6 +117,7 @@ export default function MemberCoaches() {
           </tbody>
         </table>
       </div>
+      <Pagination page={coachesPage} pageSize={coachesPageSize} total={coachesTotal} onPage={setCoachesPage} />
 
       <div className="card mt-4">
         <div className="card-title">Lịch PT của tôi</div>
@@ -133,6 +141,7 @@ export default function MemberCoaches() {
             </tbody>
           </table>
         </div>
+        <Pagination page={sessPage} pageSize={sessPageSize} total={sessTotal} onPage={setSessPage} />
       </div>
 
       <Modal open={!!rateFor} title={`Đánh giá ${rateFor?.fullName ?? ''}`} onClose={() => setRateFor(null)}>

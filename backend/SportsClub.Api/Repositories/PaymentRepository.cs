@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SportsClub.Api.Data;
+using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
 
 namespace SportsClub.Api.Repositories;
@@ -14,10 +15,38 @@ public class PaymentRepository
         _db.Payments.Include(p => p.Member)
             .OrderByDescending(p => p.PaidAt).ToListAsync();
 
+    /// <summary>One page of payments, filtered by status and a member-name /
+    /// description / method search.</summary>
+    public Task<PagedResult<Payment>> FindPagedAsync(int page, int pageSize, string? search, string? status)
+    {
+        var q = _db.Payments.Include(p => p.Member).AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status))
+            q = q.Where(p => p.Status == status);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(p => p.Member.FullName.Contains(s)
+                             || p.Method.Contains(s)
+                             || (p.Description != null && p.Description.Contains(s)));
+        }
+        return q.OrderByDescending(p => p.PaidAt).ToPagedResultAsync(page, pageSize);
+    }
+
     public Task<List<Payment>> FindByMemberIdAsync(int memberId) =>
         _db.Payments.Include(p => p.Member)
             .Where(p => p.MemberId == memberId)
             .OrderByDescending(p => p.PaidAt).ToListAsync();
+
+    public Task<PagedResult<Payment>> FindPagedByMemberAsync(int memberId, int page, int pageSize, string? search)
+    {
+        var q = _db.Payments.Include(p => p.Member).Where(p => p.MemberId == memberId);
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(p => p.Method.Contains(s) || (p.Description != null && p.Description.Contains(s)));
+        }
+        return q.OrderByDescending(p => p.PaidAt).ToPagedResultAsync(page, pageSize);
+    }
 
     public async Task<int> SaveAsync(Payment payment)
     {

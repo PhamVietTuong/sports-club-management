@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { CoachRatingSummary } from '../../api/types'
+import Pagination from '../../components/Pagination'
+import { useClientPaged } from '../../hooks/useClientPaged'
 
 function stars(n: number) { return '★'.repeat(Math.round(n)) + '☆'.repeat(5 - Math.round(n)) }
 
@@ -13,6 +15,10 @@ export default function CoachRatings() {
       .then((res) => setData(res.data))
       .catch((err) => setError(errorMessage(err, 'Không thể tải đánh giá.')))
   }, [])
+
+  const { pageItems: ratings, total, page, pageSize, setPage, search, setSearch } =
+    useClientPaged(data?.ratings ?? [], (r, q) =>
+      r.memberName.toLowerCase().includes(q) || (r.comment ?? '').toLowerCase().includes(q))
 
   return (
     <>
@@ -34,11 +40,15 @@ export default function CoachRatings() {
 
       <div className="card mt-4">
         <div className="card-title">Nhận xét từ học viên</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo học viên / nhận xét…"
+            value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Học viên</th><th>Số sao</th><th>Nhận xét</th><th>Ngày</th></tr></thead>
             <tbody>
-              {data?.ratings.map((r) => (
+              {ratings.map((r) => (
                 <tr key={r.id}>
                   <td>{r.memberName}</td>
                   <td title={`${r.rating}/5`}>{stars(r.rating)}</td>
@@ -46,11 +56,12 @@ export default function CoachRatings() {
                   <td>{new Date(r.createdAt).toLocaleDateString('vi-VN')}</td>
                 </tr>
               ))}
-              {(!data || data.ratings.length === 0) &&
+              {ratings.length === 0 &&
                 <tr><td colSpan={4} className="empty">Chưa có đánh giá nào.</td></tr>}
             </tbody>
           </table>
         </div>
+        <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
       </div>
     </>
   )

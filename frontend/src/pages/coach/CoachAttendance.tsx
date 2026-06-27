@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { AttendanceRoster, TrainingClass } from '../../api/types'
 import { formatSchedules, isScheduledDay } from '../../utils/schedule'
+import Pagination from '../../components/Pagination'
+import { useClientPaged } from '../../hooks/useClientPaged'
 
 const STATUSES: { value: string; label: string }[] = [
   { value: 'PRESENT', label: 'Có mặt' },
@@ -21,6 +23,10 @@ export default function CoachAttendance() {
   const [roster, setRoster] = useState<AttendanceRoster | null>(null)
   const [error, setError] = useState('')
   const [flash, setFlash] = useState('')
+
+  const {
+    pageItems: pageRoster, total, page, pageSize, setPage, search, setSearch,
+  } = useClientPaged(roster?.roster ?? [], (r, q) => r.memberName.toLowerCase().includes(q))
 
   useEffect(() => {
     api.get<TrainingClass[]>('/coach/classes')
@@ -85,11 +91,18 @@ export default function CoachAttendance() {
         </div>
       )}
 
+      {roster && roster.roster.length > 0 && (
+        <div className="table-toolbar mt-4">
+          <input className="form-control search-input" placeholder="Tìm theo tên thành viên…"
+            value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+      )}
+
       <div className="table-wrap mt-4">
         <table>
           <thead><tr><th>Thành viên</th><th>Trạng thái</th><th>Check-in</th><th>Điểm danh</th></tr></thead>
           <tbody>
-            {roster?.roster.map((r) => (
+            {pageRoster.map((r) => (
               <tr key={r.memberId}>
                 <td>{r.memberName}</td>
                 <td>
@@ -108,12 +121,13 @@ export default function CoachAttendance() {
                 </td>
               </tr>
             ))}
-            {roster && roster.roster.length === 0 &&
+            {roster && pageRoster.length === 0 &&
               <tr><td colSpan={4} className="empty">Lớp chưa có thành viên đăng ký.</td></tr>}
             {!roster && <tr><td colSpan={4} className="empty">Chọn lớp để điểm danh.</td></tr>}
           </tbody>
         </table>
       </div>
+      {roster && <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />}
     </>
   )
 }

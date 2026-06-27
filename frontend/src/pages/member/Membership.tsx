@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { MembershipRequest, MemberProfile, Payment, TrainingPackage } from '../../api/types'
+import Pagination from '../../components/Pagination'
+import { usePaged } from '../../hooks/usePaged'
+import { useClientPaged } from '../../hooks/useClientPaged'
 
 const METHOD_LABEL: Record<string, string> = {
   CASH: 'Tiền mặt', CARD: 'Thẻ', TRANSFER: 'Chuyển khoản',
@@ -20,7 +23,10 @@ function vnd(n: number) { return n.toLocaleString('vi-VN') }
 
 export default function Membership() {
   const [packages, setPackages] = useState<TrainingPackage[]>([])
-  const [payments, setPayments] = useState<Payment[]>([])
+  const {
+    items: payments, total: payTotal, page: payPage, pageSize: payPageSize,
+    setPage: setPayPage, search: paySearch, setSearch: setPaySearch, reload: reloadPayments,
+  } = usePaged<Payment>('/member/payments')
   const [requests, setRequests] = useState<MembershipRequest[]>([])
   const [profile, setProfile] = useState<MemberProfile | null>(null)
   const [method, setMethod] = useState('CASH')
@@ -35,14 +41,18 @@ export default function Membership() {
     api.get<MembershipRequest[]>('/member/membership/requests')
       .then((res) => setRequests(res.data))
       .catch(() => {})
-    api.get<Payment[]>('/member/payments')
-      .then((res) => setPayments(res.data))
-      .catch(() => {})
+    reloadPayments()
   }
   useEffect(load, [])
 
   // A member may only have one in-flight request (PENDING/APPROVED) at a time.
   const hasOpen = requests.some((r) => r.status === 'PENDING' || r.status === 'APPROVED')
+
+  const {
+    pageItems: pageRequests, total: reqTotal, page: reqPage, pageSize: reqPageSize,
+    setPage: setReqPage, search: reqSearch, setSearch: setReqSearch,
+  } = useClientPaged(requests, (r, q) =>
+    r.packageName.toLowerCase().includes(q) || r.status.toLowerCase().includes(q))
 
   async function request(pkg: TrainingPackage) {
     if (!window.confirm(`Gửi yêu cầu đăng ký gói "${pkg.name}" (${vnd(pkg.price)})?`)) return
@@ -104,13 +114,17 @@ export default function Membership() {
           Sau khi quản trị viên duyệt, bạn có 24 giờ để hủy hoặc đổi gói — trước khi
           kích hoạt hoặc đăng ký lớp đầu tiên.
         </p>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo gói / trạng thái…"
+            value={reqSearch} onChange={(e) => setReqSearch(e.target.value)} />
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr><th>Gói</th><th>Số tiền</th><th>Trạng thái</th><th>Ngày yêu cầu</th><th>Ghi chú</th><th></th></tr>
             </thead>
             <tbody>
-              {requests.map((r) => (
+              {pageRequests.map((r) => (
                 <tr key={r.id}>
                   <td>{r.packageName}</td>
                   <td>{vnd(r.amount)}</td>
@@ -141,10 +155,11 @@ export default function Membership() {
                   </td>
                 </tr>
               ))}
-              {requests.length === 0 && <tr><td colSpan={6} className="empty">Chưa có yêu cầu nào.</td></tr>}
+              {pageRequests.length === 0 && <tr><td colSpan={6} className="empty">Chưa có yêu cầu nào.</td></tr>}
             </tbody>
           </table>
         </div>
+        <Pagination page={reqPage} pageSize={reqPageSize} total={reqTotal} onPage={setReqPage} />
       </div>
 
       <div className="card mt-4">
@@ -190,6 +205,10 @@ export default function Membership() {
 
       <div className="card mt-4">
         <div className="card-title">Lịch sử thanh toán</div>
+        <div className="table-toolbar">
+          <input className="form-control search-input" placeholder="Tìm theo mô tả / phương thức…"
+            value={paySearch} onChange={(e) => setPaySearch(e.target.value)} />
+        </div>
         <div className="table-wrap">
           <table>
             <thead><tr><th>Số tiền</th><th>Phương thức</th><th>Mô tả</th><th>Thời gian</th></tr></thead>
@@ -206,6 +225,7 @@ export default function Membership() {
             </tbody>
           </table>
         </div>
+        <Pagination page={payPage} pageSize={payPageSize} total={payTotal} onPage={setPayPage} />
       </div>
     </>
   )

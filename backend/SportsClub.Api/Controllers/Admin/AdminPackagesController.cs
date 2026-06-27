@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SportsClub.Api.Models.Dtos;
 using SportsClub.Api.Models.Entities;
+using SportsClub.Api.Patterns.Iterator;
 using SportsClub.Api.Repositories;
 
 namespace SportsClub.Api.Controllers.Admin;
@@ -21,8 +22,13 @@ public class AdminPackagesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<PackageDto>>> List() =>
-        Ok((await _packages.FindAllAsync()).Select(PackageDto.From));
+    public async Task<ActionResult<PagedResult<PackageDto>>> List(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
+    {
+        var result = await _packages.FindPagedAsync(page, pageSize, search);
+        // ITERATOR PATTERN — traverse the page via the club iterator while mapping.
+        return Ok(result.MapIterating(PackageDto.From));
+    }
 
     [HttpPost]
     public async Task<IActionResult> Create(SavePackageRequest req)
