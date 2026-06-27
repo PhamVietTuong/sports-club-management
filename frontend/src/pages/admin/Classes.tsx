@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { Coach, TrainingClass } from '../../api/types'
+import type { Coach, Schedule, TrainingClass } from '../../api/types'
 import Modal from '../../components/Modal'
+import ScheduleDialog from '../../components/ScheduleDialog'
 
 const LEVELS = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED']
 
@@ -22,6 +23,8 @@ const emptyForm: ClassForm = {
 export default function Classes() {
   const [classes, setClasses] = useState<TrainingClass[]>([])
   const [coaches, setCoaches] = useState<Coach[]>([])
+  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [scheduleDialog, setScheduleDialog] = useState<{ title: string; schedules: Schedule[] } | null>(null)
   const [error, setError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
@@ -36,7 +39,12 @@ export default function Classes() {
   useEffect(load, [])
   useEffect(() => {
     api.get<Coach[]>('/admin/coaches').then((res) => setCoaches(res.data)).catch(() => {})
+    api.get<Schedule[]>('/admin/schedules').then((res) => setSchedules(res.data)).catch(() => {})
   }, [])
+
+  function viewSchedule(c: TrainingClass) {
+    setScheduleDialog({ title: c.name, schedules: schedules.filter((s) => s.classId === c.id) })
+  }
 
   function openAdd() { setForm(emptyForm); setOpen(true) }
   function openEdit(c: TrainingClass) {
@@ -101,6 +109,7 @@ export default function Classes() {
                 </td>
                 <td className="actions">
                   <button className="btn btn-ghost btn-sm" onClick={() => openEdit(c)}>Sửa</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => viewSchedule(c)}>Lịch tập</button>
                   <button className="btn btn-ghost btn-sm" onClick={() => clone(c.id)}>Nhân bản</button>
                 </td>
               </tr>
@@ -155,6 +164,9 @@ export default function Classes() {
           <button className="btn btn-primary w-100" disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
         </form>
       </Modal>
+
+      <ScheduleDialog open={scheduleDialog !== null} title={scheduleDialog?.title ?? ''}
+        schedules={scheduleDialog?.schedules ?? []} onClose={() => setScheduleDialog(null)} />
     </>
   )
 }

@@ -12,8 +12,13 @@ namespace SportsClub.Api.Controllers.Admin;
 public class AdminPackagesController : ControllerBase
 {
     private readonly PackageRepository _packages;
+    private readonly PackageClassRepository _packageClasses;
 
-    public AdminPackagesController(PackageRepository packages) => _packages = packages;
+    public AdminPackagesController(PackageRepository packages, PackageClassRepository packageClasses)
+    {
+        _packages = packages;
+        _packageClasses = packageClasses;
+    }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PackageDto>>> List() =>
@@ -65,5 +70,24 @@ public class AdminPackagesController : ControllerBase
         await _packages.SaveAsync(copy);
 
         return Ok(new MessageResponse("Đã nhân bản gói tập."));
+    }
+
+    /// <summary>The ids of the classes this package grants access to.</summary>
+    [HttpGet("{id:int}/classes")]
+    public async Task<IActionResult> GetClasses(int id)
+    {
+        if (await _packages.FindByIdAsync(id) is null)
+            return NotFound(new MessageResponse("Không tìm thấy gói tập."));
+        return Ok(new { classIds = await _packageClasses.FindClassIdsAsync(id) });
+    }
+
+    /// <summary>Set exactly which classes this package grants access to.</summary>
+    [HttpPut("{id:int}/classes")]
+    public async Task<IActionResult> SetClasses(int id, SetPackageClassesRequest req)
+    {
+        if (await _packages.FindByIdAsync(id) is null)
+            return NotFound(new MessageResponse("Không tìm thấy gói tập."));
+        await _packageClasses.SetAsync(id, req.ClassIds ?? Array.Empty<int>());
+        return Ok(new MessageResponse("Đã cập nhật danh sách lớp của gói tập."));
     }
 }

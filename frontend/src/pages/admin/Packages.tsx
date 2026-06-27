@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { TrainingPackage } from '../../api/types'
+import type { TrainingClass, TrainingPackage } from '../../api/types'
 import Modal from '../../components/Modal'
 
 interface PkgForm {
@@ -25,12 +25,43 @@ export default function Packages() {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<PkgForm>(emptyForm)
 
+  // Package ⇄ class linking
+  const [allClasses, setAllClasses] = useState<TrainingClass[]>([])
+  const [classModal, setClassModal] = useState<TrainingPackage | null>(null)
+  const [selectedClassIds, setSelectedClassIds] = useState<number[]>([])
+
   function load() {
     api.get<TrainingPackage[]>('/admin/packages')
       .then((res) => setPackages(res.data))
       .catch((err) => setError(errorMessage(err, 'Không thể tải danh sách gói tập.')))
   }
   useEffect(load, [])
+  useEffect(() => {
+    api.get<TrainingClass[]>('/admin/classes').then((res) => setAllClasses(res.data)).catch(() => {})
+  }, [])
+
+  async function openClasses(p: TrainingPackage) {
+    setError(''); setFlash('')
+    try {
+      const res = await api.get<{ classIds: number[] }>(`/admin/packages/${p.id}/classes`)
+      setSelectedClassIds(res.data.classIds)
+      setClassModal(p)
+    } catch (err) { setError(errorMessage(err)) }
+  }
+
+  function toggleClass(id: number) {
+    setSelectedClassIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
+  }
+
+  async function saveClasses(e: FormEvent) {
+    e.preventDefault()
+    if (!classModal) return
+    setBusy(true); setError('')
+    try {
+      await api.put(`/admin/packages/${classModal.id}/classes`, { classIds: selectedClassIds })
+      setClassModal(null); setFlash('Đã cập nhật danh sách lớp của gói tập.')
+    } catch (err) { setError(errorMessage(err)) } finally { setBusy(false) }
+  }
 
   function openAdd() { setForm(emptyForm); setOpen(true) }
   function openEdit(p: TrainingPackage) {
@@ -93,6 +124,7 @@ export default function Packages() {
                 </td>
                 <td className="actions">
                   <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>Sửa</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => openClasses(p)}>Lớp học</button>
                   <button className="btn btn-ghost btn-sm" onClick={() => clone(p.id)}>Nhân bản</button>
                 </td>
               </tr>
@@ -139,6 +171,24 @@ export default function Packages() {
               </label>
             </div>
           )}
+          <button className="btn btn-primary w-100" disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
+        </form>
+      </Modal>
+
+      <Modal open={classModal !== null} title={`Lớp của gói: ${classModal?.name ?? ''}`}
+        onClose={() => setClassModal(null)}>
+        <form onSubmit={saveClasses}>
+          <p className="text-muted">Chọn các lớp mà thành viên mua gói này được phép đăng ký.</p>
+          {allClasses.map((c) => (
+            <div className="form-group" key={c.id} style={{ marginBottom: 6 }}>
+              <label className="form-label" style={{ fontWeight: 'normal' }}>
+                <input type="checkbox" checked={selectedClassIds.includes(c.id)}
+                  onChange={() => toggleClass(c.id)} />{' '}
+                {c.name} {c.level ? `(${c.level})` : ''}
+              </label>
+            </div>
+          ))}
+          {allClasses.length === 0 && <p className="empty">Chưa có lớp học nào.</p>}
           <button className="btn btn-primary w-100" disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
         </form>
       </Modal>

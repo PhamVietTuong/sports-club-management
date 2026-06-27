@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { ClassDetail, TrainingClass } from '../../api/types'
+import type { ClassDetail, Schedule, TrainingClass } from '../../api/types'
+import { formatSchedules } from '../../utils/schedule'
+import ScheduleDialog from '../../components/ScheduleDialog'
 
 export default function CoachClasses() {
   const [classes, setClasses] = useState<TrainingClass[]>([])
   const [detail, setDetail] = useState<ClassDetail | null>(null)
+  const [scheduleDialog, setScheduleDialog] = useState<{ title: string; schedules: Schedule[] } | null>(null)
   const [error, setError] = useState('')
   const [detailError, setDetailError] = useState('')
 
@@ -23,6 +26,12 @@ export default function CoachClasses() {
       .catch((err) => setDetailError(errorMessage(err, 'Bạn không có quyền xem lớp học này.')))
   }
 
+  function viewSchedule(c: TrainingClass) {
+    api.get<ClassDetail>(`/coach/classes/${c.id}`)
+      .then((res) => setScheduleDialog({ title: c.name, schedules: res.data.schedules }))
+      .catch((err) => setError(errorMessage(err, 'Không thể tải lịch tập.')))
+  }
+
   return (
     <>
       <div className="page-header"><h1>Lớp học của tôi</h1></div>
@@ -37,7 +46,10 @@ export default function CoachClasses() {
                 <tr key={c.id}>
                   <td>{c.name}</td><td>{c.level || '—'}</td>
                   <td>{c.currentEnrolled}/{c.capacity}</td>
-                  <td><button className="btn btn-ghost btn-sm" onClick={() => viewClass(c.id)}>Xem</button></td>
+                  <td className="actions">
+                    <button className="btn btn-ghost btn-sm" onClick={() => viewClass(c.id)}>Xem</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => viewSchedule(c)}>Lịch tập</button>
+                  </td>
                 </tr>
               ))}
               {classes.length === 0 && <tr><td colSpan={4} className="empty">Chưa có lớp nào.</td></tr>}
@@ -52,6 +64,7 @@ export default function CoachClasses() {
           {detail && (
             <>
               <p className="text-muted">{detail.class.name} — {detail.enrolledMembers.length} thành viên</p>
+              <p className="text-muted">Lịch học: <strong>{formatSchedules(detail.schedules)}</strong></p>
               <div className="table-wrap">
                 <table>
                   <thead><tr><th>Thành viên</th><th>Ngày đăng ký</th></tr></thead>
@@ -68,6 +81,9 @@ export default function CoachClasses() {
           )}
         </div>
       </div>
+
+      <ScheduleDialog open={scheduleDialog !== null} title={scheduleDialog?.title ?? ''}
+        schedules={scheduleDialog?.schedules ?? []} onClose={() => setScheduleDialog(null)} />
     </>
   )
 }

@@ -30,3 +30,6 @@ public record UpdatePackageRequest(
     int MaxClasses,
     string? Description,
     bool IsActive);
+
+/// <summary>The set of class ids a package grants access to.</summary>
+public record SetPackageClassesRequest(int[] ClassIds);

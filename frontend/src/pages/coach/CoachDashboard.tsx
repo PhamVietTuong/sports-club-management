@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { CoachDashboard } from '../../api/types'
+import { DAY_LABEL } from '../../utils/schedule'
 
 export default function CoachDashboard() {
   const [data, setData] = useState<CoachDashboard | null>(null)
@@ -47,7 +48,7 @@ export default function CoachDashboard() {
             <tbody>
               {data.schedules.map((s) => (
                 <tr key={s.id}>
-                  <td>{s.className}</td><td>{s.dayOfWeek}</td>
+                  <td>{s.className}</td><td>{DAY_LABEL[s.dayOfWeek] ?? s.dayOfWeek}</td>
                   <td>{s.startTime}</td><td>{s.endTime}</td><td>{s.room || '—'}</td>
                 </tr>
               ))}

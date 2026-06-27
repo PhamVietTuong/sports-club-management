@@ -19,6 +19,10 @@ public class EnrollmentRepository
         _db.Enrollments.Include(e => e.Class).Include(e => e.Member)
             .Where(e => e.ClassId == classId && e.Status == "ACTIVE").ToListAsync();
 
+    public Task<List<Enrollment>> FindActiveByClassIdsAsync(IEnumerable<int> classIds) =>
+        _db.Enrollments.Include(e => e.Class).Include(e => e.Member)
+            .Where(e => classIds.Contains(e.ClassId) && e.Status == "ACTIVE").ToListAsync();
+
     public Task<bool> IsEnrolledAsync(int memberId, int classId) =>
         _db.Enrollments.AnyAsync(e =>
             e.MemberId == memberId && e.ClassId == classId && e.Status == "ACTIVE");

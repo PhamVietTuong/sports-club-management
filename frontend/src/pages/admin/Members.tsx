@@ -82,9 +82,9 @@ export default function Members() {
           <select className="form-control" value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="INACTIVE">INACTIVE</option>
-            <option value="SUSPENDED">SUSPENDED</option>
+            <option value="ACTIVE">Hoạt Động</option>
+            <option value="INACTIVE">Không Hoạt Động</option>
+            <option value="SUSPENDED">Tạm Ngưng</option>
           </select>
           <button className="btn btn-primary" onClick={() => { setFormError(''); setOpen(true) }}>+ Thêm thành viên</button>
         </div>
@@ -114,9 +114,9 @@ export default function Members() {
                 <td>
                   <select className="form-control btn-sm" value={m.status}
                     onChange={(e) => changeStatus(m.id, e.target.value)}>
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="INACTIVE">INACTIVE</option>
-                    <option value="SUSPENDED">SUSPENDED</option>
+                    <option value="ACTIVE">Hoạt Động</option>
+                    <option value="INACTIVE">Không Hoạt Động</option>
+                    <option value="SUSPENDED">Tạm Ngưng</option>
                   </select>
                 </td>
               </tr>

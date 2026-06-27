@@ -30,6 +30,15 @@ public class AdminSchedulesController : ControllerBase
         if (!TimeOnly.TryParse(req.StartTime, out var start) ||
             !TimeOnly.TryParse(req.EndTime, out var end))
             return BadRequest(new MessageResponse("Giờ bắt đầu/kết thúc không hợp lệ."));
+        if (end <= start)
+            return BadRequest(new MessageResponse("Giờ kết thúc phải sau giờ bắt đầu."));
+
+        // Reject a slot that overlaps another session of the same class on the
+        // same weekday (e.g. two 07:00–08:00 Monday slots).
+        var existing = await _schedules.FindByClassIdAsync(req.ClassId);
+        if (Overlaps(existing, req.DayOfWeek, start, end))
+            return BadRequest(new MessageResponse(
+                "Lịch tập bị trùng giờ với một buổi khác của lớp này trong cùng ngày."));
 
         await _schedules.SaveAsync(new Schedule
         {
@@ -41,6 +50,33 @@ public class AdminSchedulesController : ControllerBase
             RepeatWeekly = true,
         });
         return Ok(new MessageResponse("Đã thêm lịch tập."));
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, CreateScheduleRequest req)
+    {
+        var schedule = await _schedules.FindByIdAsync(id);
+        if (schedule is null) return NotFound(new MessageResponse("Không tìm thấy lịch tập."));
+        if (!TimeOnly.TryParse(req.StartTime, out var start) ||
+            !TimeOnly.TryParse(req.EndTime, out var end))
+            return BadRequest(new MessageResponse("Giờ bắt đầu/kết thúc không hợp lệ."));
+        if (end <= start)
+            return BadRequest(new MessageResponse("Giờ kết thúc phải sau giờ bắt đầu."));
+
+        // Same overlap guard as Create, ignoring the row being edited.
+        var existing = await _schedules.FindByClassIdAsync(req.ClassId);
+        if (Overlaps(existing, req.DayOfWeek, start, end, excludeId: id))
+            return BadRequest(new MessageResponse(
+                "Lịch tập bị trùng giờ với một buổi khác của lớp này trong cùng ngày."));
+
+        schedule.ClassId = req.ClassId;
+        schedule.DayOfWeek = req.DayOfWeek;
+        schedule.StartTime = start;
+        schedule.EndTime = end;
+        schedule.Room = req.Room;
+        await _schedules.UpdateAsync(schedule);
+
+        return Ok(new MessageResponse("Đã cập nhật lịch tập."));
     }
 
     /// <summary>PROTOTYPE PATTERN — clone this week's schedule into the next week.</summary>
@@ -65,4 +101,11 @@ public class AdminSchedulesController : ControllerBase
         await _schedules.DeleteAsync(id);
         return Ok(new MessageResponse("Đã xóa lịch tập."));
     }
+
+    /// <summary>True if any existing slot (other than <paramref name="excludeId"/>)
+    /// is on the same weekday and overlaps [start, end).</summary>
+    private static bool Overlaps(
+        IEnumerable<Schedule> existing, string day, TimeOnly start, TimeOnly end, int excludeId = 0) =>
+        existing.Any(s => s.Id != excludeId && s.DayOfWeek == day
+                          && s.StartTime < end && start < s.EndTime);
 }

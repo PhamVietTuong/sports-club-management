@@ -110,11 +110,13 @@ export interface MemberDashboard {
 export interface AvailableClass {
   class: TrainingClass
   isEnrolled: boolean
+  schedules: Schedule[]
 }
 
 export interface ClassDetail {
   class: TrainingClass
   enrolledMembers: Enrollment[]
+  schedules: Schedule[]
 }
 
 export interface MemberProfile {
@@ -181,6 +183,7 @@ export interface AttendanceRosterEntry {
 export interface AttendanceRoster {
   date: string
   class: TrainingClass
+  schedules: Schedule[]
   roster: AttendanceRosterEntry[]
 }
 
@@ -256,6 +259,45 @@ export interface PtSession {
   endTime: string
   status: string
   notes?: string | null
+}
+
+// ── Module 10: Membership requests (register package → admin approval) ───────
+export interface MembershipRequest {
+  id: number
+  memberId: number
+  memberName: string
+  packageId: number
+  packageName: string
+  amount: number
+  method: string
+  status: string // PENDING | APPROVED | ACTIVE | REJECTED | CANCELLED
+  requestedAt: string
+  approvedAt?: string | null
+  startDate?: string | null
+  activatedAt?: string | null
+  note?: string | null
+  canModify: boolean
+}
+
+// A coach-facing unassigned class with its weekly schedule and enrolled members.
+export interface CoachAvailableClass {
+  class: TrainingClass
+  schedules: Schedule[]
+  enrolledMembers: Enrollment[]
+}
+
+// ── Module 10: Coach class-change requests (claim/release → admin approval) ───
+export interface ClassChangeRequest {
+  id: number
+  coachId: number
+  coachName: string
+  classId: number
+  className: string
+  action: string // CLAIM | RELEASE
+  status: string // PENDING | APPROVED | REJECTED
+  requestedAt: string
+  decidedAt?: string | null
+  note?: string | null
 }
 
 // ── Module 9: Chat ───────────────────────────────────────────────────────────

@@ -227,6 +227,52 @@ CREATE TABLE messages (
 );
 GO
 
+-- Module 10 — Membership requests (member registers a package → admin approves).
+-- Lifecycle: PENDING → APPROVED → ACTIVE (or REJECTED/CANCELLED). After approval
+-- the member may still cancel/change within a 24h grace window, until the
+-- membership is activated (first class registered/checked-in or explicit activate).
+CREATE TABLE membership_requests (
+    id           INT IDENTITY(1,1) PRIMARY KEY,
+    member_id    INT           NOT NULL FOREIGN KEY REFERENCES members(id),
+    package_id   INT           NOT NULL FOREIGN KEY REFERENCES training_packages(id),
+    amount       DECIMAL(12,2) NOT NULL,
+    method       NVARCHAR(20)  DEFAULT 'CASH'
+                               CHECK (method IN ('CASH','CARD','TRANSFER')),
+    status       NVARCHAR(15)  DEFAULT 'PENDING'
+                               CHECK (status IN ('PENDING','APPROVED','ACTIVE','REJECTED','CANCELLED')),
+    requested_at DATETIME2     DEFAULT GETDATE(),
+    approved_at  DATETIME2,
+    start_date   DATE,
+    activated_at DATETIME2,
+    note         NVARCHAR(255)
+);
+GO
+
+-- Module 10 — Package ⇄ class links. A member who holds a package may only
+-- register for the classes attached to it.
+CREATE TABLE package_classes (
+    id         INT IDENTITY(1,1) PRIMARY KEY,
+    package_id INT NOT NULL FOREIGN KEY REFERENCES training_packages(id),
+    class_id   INT NOT NULL FOREIGN KEY REFERENCES training_classes(id),
+    CONSTRAINT uq_package_class UNIQUE (package_id, class_id)
+);
+GO
+
+-- Module 10 — Coach class-change requests (accept/claim or give-up/release a
+-- class). The assignment only changes after an admin approves the request.
+CREATE TABLE class_change_requests (
+    id           INT IDENTITY(1,1) PRIMARY KEY,
+    coach_id     INT          NOT NULL FOREIGN KEY REFERENCES coaches(id),
+    class_id     INT          NOT NULL FOREIGN KEY REFERENCES training_classes(id),
+    action       NVARCHAR(10) NOT NULL CHECK (action IN ('CLAIM','RELEASE')),
+    status       NVARCHAR(15) DEFAULT 'PENDING'
+                              CHECK (status IN ('PENDING','APPROVED','REJECTED')),
+    requested_at DATETIME2    DEFAULT GETDATE(),
+    decided_at   DATETIME2,
+    note         NVARCHAR(255)
+);
+GO
+
 -- ============================================================
 -- Sample data (passwords are BCrypt hash of "Password123").
 -- BCrypt.Net-Next verifies these $2a$ hashes natively.
@@ -267,6 +313,27 @@ INSERT INTO schedules (class_id, day_of_week, start_time, end_time, room) VALUES
 (2, 'TUESDAY',   '18:00', '19:00', 'Gym Floor'),
 (2, 'THURSDAY',  '18:00', '19:00', 'Gym Floor'),
 (3, 'FRIDAY',    '10:00', '11:00', 'Studio B');
+GO
+
+-- Link packages to the classes they grant access to.
+--   Basic    → Morning Yoga
+--   Standard → Morning Yoga, CrossFit Blast, Pilates Core
+--   Premium  → all classes
+INSERT INTO package_classes (package_id, class_id) VALUES
+(1, 1),
+(2, 1), (2, 2), (2, 3),
+(3, 1), (3, 2), (3, 3);
+GO
+
+-- Give the sample member (Alice, member id 1) an already-active Standard
+-- membership so the demo shows classes immediately.
+UPDATE members SET package_id = 2 WHERE id = 1;
+GO
+
+INSERT INTO membership_requests
+    (member_id, package_id, amount, method, status, requested_at, approved_at, start_date, activated_at)
+VALUES
+(1, 2, 130.00, 'CASH', 'ACTIVE', GETDATE(), GETDATE(), CAST(GETDATE() AS DATE), GETDATE());
 GO
 
 INSERT INTO equipment (name, category, quantity, status, purchase_date, notes) VALUES

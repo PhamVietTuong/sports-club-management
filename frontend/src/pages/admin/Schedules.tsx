@@ -5,12 +5,13 @@ import Modal from '../../components/Modal'
 
 const DAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']
 
-const emptyForm = { classId: '', dayOfWeek: 'MONDAY', startTime: '07:00', endTime: '08:00', room: '' }
+const emptyForm = { id: 0, classId: '', dayOfWeek: 'MONDAY', startTime: '07:00', endTime: '08:00', room: '' }
 
 export default function Schedules() {
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [classes, setClasses] = useState<TrainingClass[]>([])
   const [error, setError] = useState('')
+  const [formError, setFormError] = useState('')
   const [flash, setFlash] = useState('')
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
@@ -26,6 +27,15 @@ export default function Schedules() {
     api.get<TrainingClass[]>('/admin/classes').then((res) => setClasses(res.data)).catch(() => {})
   }, [])
 
+  function openAdd() { setForm(emptyForm); setFormError(''); setOpen(true) }
+  function openEdit(s: Schedule) {
+    setForm({
+      id: s.id, classId: String(s.classId), dayOfWeek: s.dayOfWeek,
+      startTime: s.startTime, endTime: s.endTime, room: s.room ?? '',
+    })
+    setFormError(''); setOpen(true)
+  }
+
   async function clone(id: number) {
     try { await api.post(`/admin/schedules/${id}/clone`); setFlash('Đã nhân bản lịch tập.'); load() }
     catch (err) { setError(errorMessage(err)) }
@@ -38,22 +48,28 @@ export default function Schedules() {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    if (!form.classId) { setError('Vui lòng chọn lớp học.'); return }
-    setBusy(true); setError('')
+    if (!form.classId) { setFormError('Vui lòng chọn lớp học.'); return }
+    setBusy(true); setFormError('')
+    const body = {
+      classId: Number(form.classId), dayOfWeek: form.dayOfWeek,
+      startTime: form.startTime, endTime: form.endTime, room: form.room || null,
+    }
     try {
-      await api.post('/admin/schedules', {
-        classId: Number(form.classId), dayOfWeek: form.dayOfWeek,
-        startTime: form.startTime, endTime: form.endTime, room: form.room || null,
-      })
-      setOpen(false); setForm(emptyForm); setFlash('Đã thêm lịch tập.'); load()
-    } catch (err) { setError(errorMessage(err)) } finally { setBusy(false) }
+      if (form.id) await api.put(`/admin/schedules/${form.id}`, body)
+      else await api.post('/admin/schedules', body)
+      setOpen(false); setFlash(form.id ? 'Đã cập nhật lịch tập.' : 'Đã thêm lịch tập.')
+      setForm(emptyForm); load()
+    } catch (err) {
+      // Show conflict / validation errors inside the dialog, keeping it open.
+      setFormError(errorMessage(err))
+    } finally { setBusy(false) }
   }
 
   return (
     <>
       <div className="page-header">
         <h1>Lịch tập</h1>
-        <button className="btn btn-primary" onClick={() => setOpen(true)}>+ Thêm lịch</button>
+        <button className="btn btn-primary" onClick={openAdd}>+ Thêm lịch</button>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
@@ -74,6 +90,7 @@ export default function Schedules() {
                 <td>{s.endTime}</td>
                 <td>{s.room || '—'}</td>
                 <td className="actions">
+                  <button className="btn btn-ghost btn-sm" onClick={() => openEdit(s)}>Sửa</button>
                   <button className="btn btn-ghost btn-sm" onClick={() => clone(s.id)}>Nhân bản</button>
                   <button className="btn btn-danger btn-sm" onClick={() => remove(s.id)}>Xóa</button>
                 </td>
@@ -84,8 +101,9 @@ export default function Schedules() {
         </table>
       </div>
 
-      <Modal open={open} title="Thêm lịch tập" onClose={() => setOpen(false)}>
+      <Modal open={open} title={form.id ? 'Sửa lịch tập' : 'Thêm lịch tập'} onClose={() => setOpen(false)}>
         <form onSubmit={submit}>
+          {formError && <div className="alert alert-danger">{formError}</div>}
           <div className="form-group">
             <label className="form-label">Lớp học *</label>
             <select className="form-control" value={form.classId} required

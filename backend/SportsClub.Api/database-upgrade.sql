@@ -155,5 +155,98 @@ IF NOT EXISTS (SELECT 1 FROM equipment)
     (N'Yoga Mat',        N'Studio',   30, 'AVAILABLE',   '2024-03-10', NULL);
 GO
 
+-- ============================================================
+-- Module 10 — Package registration workflow, package⇄class links,
+--             and coach class-change (claim/release) approvals.
+-- ============================================================
+
+-- Member package-registration requests (PENDING → APPROVED → ACTIVE,
+-- or REJECTED/CANCELLED). After approval the member has a 24h grace window
+-- to cancel/change before the membership is activated/locked.
+IF OBJECT_ID('dbo.membership_requests', 'U') IS NULL
+    CREATE TABLE membership_requests (
+        id           INT IDENTITY(1,1) PRIMARY KEY,
+        member_id    INT           NOT NULL FOREIGN KEY REFERENCES members(id),
+        package_id   INT           NOT NULL FOREIGN KEY REFERENCES training_packages(id),
+        amount       DECIMAL(12,2) NOT NULL,
+        method       NVARCHAR(20)  DEFAULT 'CASH'
+                                   CHECK (method IN ('CASH','CARD','TRANSFER')),
+        status       NVARCHAR(15)  DEFAULT 'PENDING'
+                                   CHECK (status IN ('PENDING','APPROVED','ACTIVE','REJECTED','CANCELLED')),
+        requested_at DATETIME2     DEFAULT GETDATE(),
+        approved_at  DATETIME2,
+        start_date   DATE,
+        activated_at DATETIME2,
+        note         NVARCHAR(255)
+    );
+GO
+
+-- Package ⇄ class links: a member who holds a package may only register for
+-- the classes attached to it.
+IF OBJECT_ID('dbo.package_classes', 'U') IS NULL
+    CREATE TABLE package_classes (
+        id         INT IDENTITY(1,1) PRIMARY KEY,
+        package_id INT NOT NULL FOREIGN KEY REFERENCES training_packages(id),
+        class_id   INT NOT NULL FOREIGN KEY REFERENCES training_classes(id),
+        CONSTRAINT uq_package_class UNIQUE (package_id, class_id)
+    );
+GO
+
+-- Coach class-change requests (CLAIM/RELEASE). The class assignment only
+-- changes after an admin approves the request.
+IF OBJECT_ID('dbo.class_change_requests', 'U') IS NULL
+    CREATE TABLE class_change_requests (
+        id           INT IDENTITY(1,1) PRIMARY KEY,
+        coach_id     INT          NOT NULL FOREIGN KEY REFERENCES coaches(id),
+        class_id     INT          NOT NULL FOREIGN KEY REFERENCES training_classes(id),
+        action       NVARCHAR(10) NOT NULL CHECK (action IN ('CLAIM','RELEASE')),
+        status       NVARCHAR(15) DEFAULT 'PENDING'
+                                  CHECK (status IN ('PENDING','APPROVED','REJECTED')),
+        requested_at DATETIME2    DEFAULT GETDATE(),
+        decided_at   DATETIME2,
+        note         NVARCHAR(255)
+    );
+GO
+
+-- Seed package ⇄ class links (only if none exist yet). Links each package to
+-- the classes it grants, matched by name so it works regardless of ids.
+IF NOT EXISTS (SELECT 1 FROM package_classes)
+BEGIN
+    -- Basic → Morning Yoga
+    INSERT INTO package_classes (package_id, class_id)
+    SELECT p.id, c.id FROM training_packages p, training_classes c
+    WHERE p.name = N'Basic' AND c.name = N'Morning Yoga';
+
+    -- Standard → Morning Yoga, CrossFit Blast, Pilates Core
+    INSERT INTO package_classes (package_id, class_id)
+    SELECT p.id, c.id FROM training_packages p, training_classes c
+    WHERE p.name = N'Standard'
+      AND c.name IN (N'Morning Yoga', N'CrossFit Blast', N'Pilates Core');
+
+    -- Premium → all classes
+    INSERT INTO package_classes (package_id, class_id)
+    SELECT p.id, c.id FROM training_packages p, training_classes c
+    WHERE p.name = N'Premium';
+END
+GO
+
+-- Give the sample member (Alice) an already-active Standard membership so the
+-- demo shows classes immediately (only if she has no request yet).
+IF EXISTS (SELECT 1 FROM members WHERE id = 1)
+   AND NOT EXISTS (SELECT 1 FROM membership_requests WHERE member_id = 1)
+BEGIN
+    DECLARE @stdId INT = (SELECT TOP 1 id FROM training_packages WHERE name = N'Standard');
+    DECLARE @stdPrice DECIMAL(12,2) = (SELECT TOP 1 price FROM training_packages WHERE name = N'Standard');
+    IF @stdId IS NOT NULL
+    BEGIN
+        UPDATE members SET package_id = @stdId WHERE id = 1;
+        INSERT INTO membership_requests
+            (member_id, package_id, amount, method, status, requested_at, approved_at, start_date, activated_at)
+        VALUES
+            (1, @stdId, @stdPrice, 'CASH', 'ACTIVE', GETDATE(), GETDATE(), CAST(GETDATE() AS DATE), GETDATE());
+    END
+END
+GO
+
 PRINT 'Upgrade complete.';
 GO

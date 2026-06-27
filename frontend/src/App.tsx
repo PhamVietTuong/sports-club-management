@@ -12,6 +12,8 @@ import Packages from './pages/admin/Packages'
 import Schedules from './pages/admin/Schedules'
 import Equipment from './pages/admin/Equipment'
 import Payments from './pages/admin/Payments'
+import MembershipRequests from './pages/admin/MembershipRequests'
+import ClassRequests from './pages/admin/ClassRequests'
 import CoachDashboard from './pages/coach/CoachDashboard'
 import CoachClasses from './pages/coach/CoachClasses'
 import CoachAttendance from './pages/coach/CoachAttendance'
@@ -45,6 +47,8 @@ export default function App() {
           <Route path="/admin/coaches" element={<Coaches />} />
           <Route path="/admin/classes" element={<Classes />} />
           <Route path="/admin/packages" element={<Packages />} />
+          <Route path="/admin/membership-requests" element={<MembershipRequests />} />
+          <Route path="/admin/class-requests" element={<ClassRequests />} />
           <Route path="/admin/schedules" element={<Schedules />} />
           <Route path="/admin/equipment" element={<Equipment />} />
           <Route path="/admin/payments" element={<Payments />} />

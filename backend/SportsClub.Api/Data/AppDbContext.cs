@@ -30,6 +30,9 @@ public class AppDbContext : DbContext
     public DbSet<HealthMetric> HealthMetrics => Set<HealthMetric>();
     public DbSet<PtSession> PtSessions => Set<PtSession>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<MembershipRequest> MembershipRequests => Set<MembershipRequest>();
+    public DbSet<PackageClass> PackageClasses => Set<PackageClass>();
+    public DbSet<ClassChangeRequest> ClassChangeRequests => Set<ClassChangeRequest>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -286,6 +289,53 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.NoAction);
             e.HasOne(x => x.Recipient).WithMany().HasForeignKey(x => x.RecipientUserId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        b.Entity<MembershipRequest>(e =>
+        {
+            e.ToTable("membership_requests");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.MemberId).HasColumnName("member_id");
+            e.Property(x => x.PackageId).HasColumnName("package_id");
+            e.Property(x => x.Amount).HasColumnName("amount").HasColumnType("decimal(12,2)");
+            e.Property(x => x.Method).HasColumnName("method").HasMaxLength(20).HasDefaultValue("CASH");
+            e.Property(x => x.Status).HasColumnName("status").HasMaxLength(15).HasDefaultValue("PENDING");
+            e.Property(x => x.RequestedAt).HasColumnName("requested_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+            e.Property(x => x.ApprovedAt).HasColumnName("approved_at").HasColumnType("datetime2");
+            e.Property(x => x.StartDate).HasColumnName("start_date").HasColumnType("date");
+            e.Property(x => x.ActivatedAt).HasColumnName("activated_at").HasColumnType("datetime2");
+            e.Property(x => x.Note).HasColumnName("note").HasMaxLength(255);
+            e.HasOne(x => x.Member).WithMany().HasForeignKey(x => x.MemberId);
+            e.HasOne(x => x.Package).WithMany().HasForeignKey(x => x.PackageId);
+        });
+
+        b.Entity<PackageClass>(e =>
+        {
+            e.ToTable("package_classes");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PackageId).HasColumnName("package_id");
+            e.Property(x => x.ClassId).HasColumnName("class_id");
+            e.HasIndex(x => new { x.PackageId, x.ClassId }).IsUnique();
+        });
+
+        b.Entity<ClassChangeRequest>(e =>
+        {
+            e.ToTable("class_change_requests");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.CoachId).HasColumnName("coach_id");
+            e.Property(x => x.ClassId).HasColumnName("class_id");
+            e.Property(x => x.Action).HasColumnName("action").HasMaxLength(10);
+            e.Property(x => x.Status).HasColumnName("status").HasMaxLength(15).HasDefaultValue("PENDING");
+            e.Property(x => x.RequestedAt).HasColumnName("requested_at").HasColumnType("datetime2")
+                .HasDefaultValueSql("GETDATE()");
+            e.Property(x => x.DecidedAt).HasColumnName("decided_at").HasColumnType("datetime2");
+            e.Property(x => x.Note).HasColumnName("note").HasMaxLength(255);
+            e.HasOne(x => x.Coach).WithMany().HasForeignKey(x => x.CoachId);
+            e.HasOne(x => x.Class).WithMany().HasForeignKey(x => x.ClassId);
         });
     }
 }

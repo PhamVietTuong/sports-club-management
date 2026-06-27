@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { MemberProfile, Payment, TrainingPackage } from '../../api/types'
+import type { MembershipRequest, MemberProfile, Payment, TrainingPackage } from '../../api/types'
 
 const METHOD_LABEL: Record<string, string> = {
   CASH: 'Tiền mặt', CARD: 'Thẻ', TRANSFER: 'Chuyển khoản',
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', ACTIVE: 'Đang hoạt động',
+  REJECTED: 'Bị từ chối', CANCELLED: 'Đã hủy',
+}
+
+const STATUS_BADGE: Record<string, string> = {
+  PENDING: 'badge-review', APPROVED: 'badge-active', ACTIVE: 'badge-active',
+  REJECTED: 'badge-inactive', CANCELLED: 'badge-inactive',
 }
 
 function vnd(n: number) { return n.toLocaleString('vi-VN') }
@@ -11,6 +21,7 @@ function vnd(n: number) { return n.toLocaleString('vi-VN') }
 export default function Membership() {
   const [packages, setPackages] = useState<TrainingPackage[]>([])
   const [payments, setPayments] = useState<Payment[]>([])
+  const [requests, setRequests] = useState<MembershipRequest[]>([])
   const [profile, setProfile] = useState<MemberProfile | null>(null)
   const [method, setMethod] = useState('CASH')
   const [error, setError] = useState('')
@@ -21,22 +32,56 @@ export default function Membership() {
     api.get<MemberProfile>('/member/profile')
       .then((res) => { setProfile(res.data); setPackages(res.data.packages) })
       .catch((err) => setError(errorMessage(err, 'Không thể tải dữ liệu.')))
+    api.get<MembershipRequest[]>('/member/membership/requests')
+      .then((res) => setRequests(res.data))
+      .catch(() => {})
     api.get<Payment[]>('/member/payments')
       .then((res) => setPayments(res.data))
       .catch(() => {})
   }
   useEffect(load, [])
 
-  async function buy(pkg: TrainingPackage) {
-    if (!window.confirm(`Mua gói "${pkg.name}" với giá ${vnd(pkg.price)}?`)) return
+  // A member may only have one in-flight request (PENDING/APPROVED) at a time.
+  const hasOpen = requests.some((r) => r.status === 'PENDING' || r.status === 'APPROVED')
+
+  async function request(pkg: TrainingPackage) {
+    if (!window.confirm(`Gửi yêu cầu đăng ký gói "${pkg.name}" (${vnd(pkg.price)})?`)) return
     setBusyId(pkg.id); setError(''); setFlash('')
     try {
-      const res = await api.post<{ message: string }>('/member/membership/buy', {
+      const res = await api.post<{ message: string }>('/member/membership/request', {
         packageId: pkg.id, method,
       })
       setFlash(res.data.message)
       load()
     } catch (err) { setError(errorMessage(err)) } finally { setBusyId(0) }
+  }
+
+  async function act(url: string, confirmMsg?: string) {
+    if (confirmMsg && !window.confirm(confirmMsg)) return
+    setError(''); setFlash('')
+    try {
+      const res = await api.post<{ message: string }>(url)
+      setFlash(res.data.message)
+      load()
+    } catch (err) { setError(errorMessage(err)) }
+  }
+
+  async function change(r: MembershipRequest) {
+    const input = window.prompt(
+      'Đổi sang gói nào? Nhập ID gói:\n' +
+        packages.map((p) => `${p.id} — ${p.name} (${vnd(p.price)})`).join('\n'),
+      String(r.packageId),
+    )
+    if (!input) return
+    const packageId = Number(input)
+    if (!packageId) { setError('ID gói không hợp lệ.'); return }
+    setError(''); setFlash('')
+    try {
+      const res = await api.post<{ message: string }>(
+        `/member/membership/requests/${r.id}/change`, { packageId })
+      setFlash(res.data.message)
+      load()
+    } catch (err) { setError(errorMessage(err)) }
   }
 
   return (
@@ -54,7 +99,61 @@ export default function Membership() {
       )}
 
       <div className="card mt-4">
-        <div className="card-title">Chọn gói tập</div>
+        <div className="card-title">Yêu cầu gói tập của tôi</div>
+        <p className="text-muted" style={{ marginTop: -8 }}>
+          Sau khi quản trị viên duyệt, bạn có 24 giờ để hủy hoặc đổi gói — trước khi
+          kích hoạt hoặc đăng ký lớp đầu tiên.
+        </p>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Gói</th><th>Số tiền</th><th>Trạng thái</th><th>Ngày yêu cầu</th><th>Ghi chú</th><th></th></tr>
+            </thead>
+            <tbody>
+              {requests.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.packageName}</td>
+                  <td>{vnd(r.amount)}</td>
+                  <td>
+                    <span className={'badge ' + (STATUS_BADGE[r.status] ?? '')}>
+                      {STATUS_LABEL[r.status] ?? r.status}
+                    </span>
+                  </td>
+                  <td>{new Date(r.requestedAt).toLocaleString('vi-VN')}</td>
+                  <td>{r.note || '—'}</td>
+                  <td className="actions">
+                    {r.status === 'APPROVED' && (
+                      <button className="btn btn-primary btn-sm"
+                        onClick={() => act(`/member/membership/requests/${r.id}/activate`,
+                          'Kích hoạt gói tập ngay? Sau khi kích hoạt sẽ không thể hủy/đổi.')}>
+                        Kích hoạt
+                      </button>
+                    )}
+                    {r.canModify && (
+                      <>
+                        <button className="btn btn-ghost btn-sm" onClick={() => change(r)}>Đổi gói</button>
+                        <button className="btn btn-danger btn-sm"
+                          onClick={() => act(`/member/membership/requests/${r.id}/cancel`, 'Hủy yêu cầu này?')}>
+                          Hủy
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {requests.length === 0 && <tr><td colSpan={6} className="empty">Chưa có yêu cầu nào.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card mt-4">
+        <div className="card-title">Đăng ký gói tập</div>
+        {hasOpen && (
+          <div className="alert alert-danger">
+            Bạn đang có một yêu cầu chờ xử lý. Hãy hoàn tất hoặc hủy yêu cầu đó trước khi đăng ký gói mới.
+          </div>
+        )}
         <div className="form-group" style={{ maxWidth: 240 }}>
           <label className="form-label">Phương thức thanh toán</label>
           <select className="form-control" value={method} onChange={(e) => setMethod(e.target.value)}>
@@ -76,9 +175,9 @@ export default function Membership() {
                   <td>{p.maxClasses}</td>
                   <td>{vnd(p.price)}</td>
                   <td>
-                    <button className="btn btn-primary btn-sm" disabled={busyId === p.id}
-                      onClick={() => buy(p)}>
-                      {busyId === p.id ? 'Đang xử lý…' : 'Mua'}
+                    <button className="btn btn-primary btn-sm" disabled={busyId === p.id || hasOpen}
+                      onClick={() => request(p)}>
+                      {busyId === p.id ? 'Đang xử lý…' : 'Gửi yêu cầu'}
                     </button>
                   </td>
                 </tr>

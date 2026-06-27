@@ -16,6 +16,9 @@ public class ScheduleRepository
     public Task<List<Schedule>> FindByClassIdAsync(int classId) =>
         _db.Schedules.Include(s => s.Class).Where(s => s.ClassId == classId).ToListAsync();
 
+    public Task<List<Schedule>> FindByClassIdsAsync(IEnumerable<int> classIds) =>
+        _db.Schedules.Include(s => s.Class).Where(s => classIds.Contains(s.ClassId)).ToListAsync();
+
     public Task<List<Schedule>> FindByCoachIdAsync(int coachId) =>
         _db.Schedules.Include(s => s.Class)
             .Where(s => s.Class.CoachId == coachId).ToListAsync();

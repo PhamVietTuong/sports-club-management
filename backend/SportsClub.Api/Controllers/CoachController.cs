@@ -5,6 +5,7 @@ using SportsClub.Api.Models.Entities;
 using SportsClub.Api.Patterns.Iterator;
 using SportsClub.Api.Repositories;
 using SportsClub.Api.Security;
+using SportsClub.Api.Services;
 
 namespace SportsClub.Api.Controllers;
 
@@ -22,12 +23,13 @@ public class CoachController : ControllerBase
     private readonly ProgressNoteRepository _progress;
     private readonly CoachRatingRepository _ratings;
     private readonly PtSessionRepository _pt;
+    private readonly ClassChangeRequestRepository _classRequests;
 
     public CoachController(CoachRepository coaches, ClassRepository classes,
         ScheduleRepository schedules, EnrollmentRepository enrollments,
         AttendanceRepository attendance, LessonPlanRepository lessonPlans,
         ProgressNoteRepository progress, CoachRatingRepository ratings,
-        PtSessionRepository pt)
+        PtSessionRepository pt, ClassChangeRequestRepository classRequests)
     {
         _coaches = coaches;
         _classes = classes;
@@ -38,6 +40,7 @@ public class CoachController : ControllerBase
         _progress = progress;
         _ratings = ratings;
         _pt = pt;
+        _classRequests = classRequests;
     }
 
     [HttpGet("dashboard")]
@@ -85,10 +88,12 @@ public class CoachController : ControllerBase
                 new MessageResponse("Bạn không có quyền xem lớp học này."));
 
         var enrolled = await _enrollments.FindActiveByClassIdAsync(id);
+        var schedules = await _schedules.FindByClassIdAsync(id);
         return Ok(new
         {
             Class = ClassDto.From(selected),
             EnrolledMembers = enrolled.Select(EnrollmentDto.From),
+            Schedules = schedules.Select(ScheduleDto.From),
         });
     }
 
@@ -114,7 +119,14 @@ public class CoachController : ControllerBase
             return new AttendanceRosterEntryDto(
                 e.MemberId, e.Member?.FullName ?? "", a?.Status, a?.CheckedInAt);
         });
-        return Ok(new { Date = day, Class = ClassDto.From(cls!), Roster = roster });
+        var schedules = await _schedules.FindByClassIdAsync(id);
+        return Ok(new
+        {
+            Date = day,
+            Class = ClassDto.From(cls!),
+            Schedules = schedules.Select(ScheduleDto.From),
+            Roster = roster,
+        });
     }
 
     [HttpPost("classes/{id:int}/attendance")]
@@ -246,6 +258,19 @@ public class CoachController : ControllerBase
         if (s is null || s.CoachId != coach.Id)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new MessageResponse("Bạn không có quyền với lịch này."));
+
+        // SCHEDULE CLASH GUARD — re-check when confirming, since the coach may have
+        // taken on a class since the member booked this PT slot.
+        if (req.Status == "CONFIRMED")
+        {
+            var classClash = ScheduleClash.FindClassClash(
+                s.SessionDate, s.StartTime, s.EndTime, await _schedules.FindByCoachIdAsync(coach.Id));
+            if (classClash is not null)
+                return BadRequest(new MessageResponse(
+                    $"Không thể xác nhận — trùng lớp \"{classClash.Class?.Name}\" " +
+                    $"({classClash.StartTime:HH\\:mm}–{classClash.EndTime:HH\\:mm}) cùng khung giờ."));
+        }
+
         await _pt.UpdateStatusAsync(s, req.Status);
         return Ok(new MessageResponse("Đã cập nhật trạng thái lịch PT."));
     }
@@ -256,28 +281,104 @@ public class CoachController : ControllerBase
     {
         var coach = await _coaches.FindByUserIdAsync(User.GetUserId());
         if (coach is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ huấn luyện viên."));
-        return Ok((await _classes.FindUnassignedActiveAsync()).Select(ClassDto.From));
+
+        var classes = await _classes.FindUnassignedActiveAsync();
+        var classIds = classes.Select(c => c.Id).ToList();
+
+        // Attach each class's weekly schedule (so the coach sees when it runs and
+        // can judge clashes) and the members already enrolled (so they know who
+        // they'd be teaching) before requesting to claim it.
+        var schedulesByClass = (await _schedules.FindByClassIdsAsync(classIds))
+            .GroupBy(s => s.ClassId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var membersByClass = (await _enrollments.FindActiveByClassIdsAsync(classIds))
+            .GroupBy(e => e.ClassId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        return Ok(classes.Select(c => new
+        {
+            Class = ClassDto.From(c),
+            Schedules = (schedulesByClass.GetValueOrDefault(c.Id) ?? new List<Schedule>())
+                .Select(ScheduleDto.From),
+            EnrolledMembers = (membersByClass.GetValueOrDefault(c.Id) ?? new List<Enrollment>())
+                .Select(EnrollmentDto.From),
+        }));
     }
 
+    [HttpGet("class-requests")]
+    public async Task<IActionResult> MyClassRequests()
+    {
+        var coach = await _coaches.FindByUserIdAsync(User.GetUserId());
+        if (coach is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ huấn luyện viên."));
+        return Ok((await _classRequests.FindByCoachIdAsync(coach.Id)).Select(ClassChangeRequestDto.From));
+    }
+
+    /// <summary>
+    /// Request to accept (claim) an unassigned class. This no longer assigns the
+    /// class directly — it posts a PENDING request for admin approval. The
+    /// coach's timetable is checked first so a clashing class is rejected early.
+    /// </summary>
     [HttpPost("classes/{id:int}/claim")]
     public async Task<IActionResult> ClaimClass(int id)
     {
         var coach = await _coaches.FindByUserIdAsync(User.GetUserId());
         if (coach is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ huấn luyện viên."));
-        // Atomic claim — fails if another coach already took it or it's inactive.
-        if (!await _classes.TryClaimAsync(id, coach.Id))
-            return BadRequest(new MessageResponse("Lớp đã được nhận hoặc không khả dụng."));
-        return Ok(new MessageResponse("Đã nhận lớp."));
+
+        var cls = await _classes.FindByIdAsync(id);
+        if (cls is null || !cls.IsActive)
+            return BadRequest(new MessageResponse("Lớp không khả dụng."));
+        if (cls.CoachId != null)
+            return BadRequest(new MessageResponse("Lớp đã có huấn luyện viên."));
+        if (await _classRequests.HasPendingForClassAsync(id))
+            return BadRequest(new MessageResponse("Lớp này đang có yêu cầu chờ duyệt."));
+
+        // SCHEDULE CLASH GUARD — the new class must not overlap the coach's
+        // existing timetable on the same day/time.
+        var conflict = ScheduleClash.FindConflict(
+            await _schedules.FindByClassIdAsync(id),
+            await _schedules.FindByCoachIdAsync(coach.Id));
+        if (conflict is { } c)
+            return BadRequest(new MessageResponse(
+                $"Lịch lớp này trùng với lớp \"{c.existing.Class?.Name}\" " +
+                $"({c.incoming.DayOfWeek} {c.incoming.StartTime:HH\\:mm}–{c.incoming.EndTime:HH\\:mm})."));
+
+        await _classRequests.SaveAsync(new ClassChangeRequest
+        {
+            CoachId = coach.Id,
+            ClassId = id,
+            Action = "CLAIM",
+            Status = "PENDING",
+            RequestedAt = DateTime.Now,
+        });
+        return Ok(new MessageResponse("Đã gửi yêu cầu nhận lớp. Chờ quản trị viên duyệt."));
     }
 
+    /// <summary>
+    /// Request to give up (release) a class the coach owns. Posts a PENDING
+    /// request for admin approval; the class stays assigned until approved.
+    /// </summary>
     [HttpPost("classes/{id:int}/release")]
     public async Task<IActionResult> ReleaseClass(int id)
     {
         var coach = await _coaches.FindByUserIdAsync(User.GetUserId());
         if (coach is null) return NotFound(new MessageResponse("Không tìm thấy hồ sơ huấn luyện viên."));
-        if (!await _classes.ReleaseAsync(id, coach.Id))
-            return BadRequest(new MessageResponse("Bạn không phụ trách lớp này."));
-        return Ok(new MessageResponse("Đã trả lớp."));
+
+        var cls = await _classes.FindByIdAsync(id);
+        if (cls is null || cls.CoachId != coach.Id)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new MessageResponse("Bạn không phụ trách lớp này."));
+        if (await _classRequests.HasPendingForClassAsync(id))
+            return BadRequest(new MessageResponse("Lớp này đang có yêu cầu chờ duyệt."));
+
+        await _classRequests.SaveAsync(new ClassChangeRequest
+        {
+            CoachId = coach.Id,
+            ClassId = id,
+            Action = "RELEASE",
+            Status = "PENDING",
+            RequestedAt = DateTime.Now,
+        });
+        return Ok(new MessageResponse("Đã gửi yêu cầu trả lớp. Chờ quản trị viên duyệt."));
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
 import type { AttendanceRoster, TrainingClass } from '../../api/types'
+import { formatSchedules, isScheduledDay } from '../../utils/schedule'
 
 const STATUSES: { value: string; label: string }[] = [
   { value: 'PRESENT', label: 'Có mặt' },
@@ -70,7 +71,19 @@ export default function CoachAttendance() {
               onChange={(e) => setDate(e.target.value)} />
           </div>
         </div>
+        {roster && (
+          <p className="text-muted" style={{ marginTop: 12, marginBottom: 0 }}>
+            Lịch cố định của lớp: <strong>{formatSchedules(roster.schedules)}</strong>
+          </p>
+        )}
       </div>
+
+      {roster && !isScheduledDay(date, roster.schedules) && (
+        <div className="alert alert-warning mt-4">
+          Ngày bạn chọn không nằm trong lịch cố định của lớp. Bạn vẫn có thể điểm danh cho buổi bù,
+          nhưng hãy kiểm tra lại ngày.
+        </div>
+      )}
 
       <div className="table-wrap mt-4">
         <table>

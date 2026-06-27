@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../../api/client'
-import type { AvailableClass } from '../../api/types'
+import type { AvailableClass, Schedule } from '../../api/types'
+import ScheduleDialog from '../../components/ScheduleDialog'
 
 export default function MemberClasses() {
   const [classes, setClasses] = useState<AvailableClass[]>([])
+  const [scheduleDialog, setScheduleDialog] = useState<{ title: string; schedules: Schedule[] } | null>(null)
   const [error, setError] = useState('')
   const [flash, setFlash] = useState('')
 
@@ -33,20 +35,30 @@ export default function MemberClasses() {
   return (
     <>
       <div className="page-header"><h1>Đăng ký lớp</h1></div>
+      <p className="text-muted">
+        Chỉ hiển thị các lớp thuộc gói tập của bạn. Đăng ký lớp đầu tiên sẽ kích hoạt gói và
+        không thể hủy/đổi gói sau đó.
+      </p>
       {error && <div className="alert alert-danger">{error}</div>}
       {flash && <div className="alert alert-success">{flash}</div>}
 
       <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>Tên lớp</th><th>HLV</th><th>Cấp độ</th><th>Còn trống</th><th></th></tr>
+            <tr><th>Tên lớp</th><th>HLV</th><th>Cấp độ</th><th>Lịch học</th><th>Còn trống</th><th></th></tr>
           </thead>
           <tbody>
-            {classes.map(({ class: c, isEnrolled }) => (
+            {classes.map(({ class: c, isEnrolled, schedules }) => (
               <tr key={c.id}>
                 <td>{c.name}</td>
                 <td>{c.coachName || '—'}</td>
                 <td>{c.level || '—'}</td>
+                <td>
+                  <button className="btn btn-ghost btn-sm"
+                    onClick={() => setScheduleDialog({ title: c.name, schedules })}>
+                    Xem lịch
+                  </button>
+                </td>
                 <td>{c.availableSlots}/{c.capacity}</td>
                 <td className="actions">
                   {isEnrolled ? (
@@ -63,10 +75,15 @@ export default function MemberClasses() {
                 </td>
               </tr>
             ))}
-            {classes.length === 0 && <tr><td colSpan={5} className="empty">Không có lớp khả dụng.</td></tr>}
+            {classes.length === 0 && <tr><td colSpan={6} className="empty">
+              Không có lớp khả dụng. Hãy đăng ký và kích hoạt một gói tập trước.
+            </td></tr>}
           </tbody>
         </table>
       </div>
+
+      <ScheduleDialog open={scheduleDialog !== null} title={scheduleDialog?.title ?? ''}
+        schedules={scheduleDialog?.schedules ?? []} onClose={() => setScheduleDialog(null)} />
     </>
   )
 }

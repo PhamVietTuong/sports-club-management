@@ -15,6 +15,8 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/admin/classes', label: 'Lớp học' },
     { to: '/admin/schedules', label: 'Lịch tập' },
     { to: '/admin/packages', label: 'Gói tập' },
+    { to: '/admin/membership-requests', label: 'Yêu cầu gói tập' },
+    { to: '/admin/class-requests', label: 'Yêu cầu lớp (HLV)' },
     { to: '/admin/equipment', label: 'Thiết bị' },
     { to: '/admin/payments', label: 'Thanh toán & Doanh thu' },
   ],
